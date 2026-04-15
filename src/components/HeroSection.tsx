@@ -17,7 +17,7 @@ export default function HeroSection() {
                 Browse Services
               </Link>
               <Link href="/register" className="btn btn-outline-light btn-lg">
-                Become a Provider
+                Become a Local Pro
               </Link>
             </div>
           </div>

@@ -44,7 +44,7 @@ export default async function ListingsPage({
         : {})
     },
     include: {
-      provider: { select: { name: true } },
+      localPro: { select: { name: true } },
       reviews: true
     },
     orderBy: { createdAt: "desc" },
@@ -71,7 +71,7 @@ export default async function ListingsPage({
         durationMinutes: listing.durationMinutes,
         priceCents: listing.priceCents,
         currency: listing.currency,
-        providerName: listing.provider.name,
+        providerName: listing.localPro.name,
         rating,
         reviewCount: listing.reviews.length
       };

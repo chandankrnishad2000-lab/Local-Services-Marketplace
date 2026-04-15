@@ -59,9 +59,9 @@ export function AdminOnly({ children }: { children: ReactNode }) {
   );
 }
 
-export function ProviderOnly({ children }: { children: ReactNode }) {
+export function LocalProOnly({ children }: { children: ReactNode }) {
   return (
-    <Protected requiredRole={['PROVIDER']}>
+    <Protected requiredRole={['LOCAL_PRO']}>
       {children}
     </Protected>
   );

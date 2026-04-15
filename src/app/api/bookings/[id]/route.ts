@@ -6,7 +6,7 @@ export async function GET(_: Request, context: { params: Promise<{ id: string }>
   const { id } = await context.params;
   const booking = await db.booking.findUnique({
     where: { id },
-    include: { listing: true, payment: true, customer: true, provider: true }
+    include: { listing: true, payment: true, customer: true, localPro: true }
   });
 
   if (!booking) {
@@ -19,7 +19,7 @@ export async function GET(_: Request, context: { params: Promise<{ id: string }>
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
-    const user = await requireRole(["PROVIDER", "ADMIN"]);
+    const user = await requireRole(["LOCAL_PRO", "ADMIN"]);
     const payload = await request.json();
     const status = payload.status;
 
@@ -32,7 +32,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       return NextResponse.json({ error: "Not found." }, { status: 404 });
     }
 
-    if (user.role === "PROVIDER" && booking.providerId !== user.id) {
+    if (user.role === "LOCAL_PRO" && booking.localProId !== user.id) {
       return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
 

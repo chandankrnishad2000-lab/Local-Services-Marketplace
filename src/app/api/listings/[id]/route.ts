@@ -7,7 +7,7 @@ export async function GET(_: Request, context: { params: Promise<{ id: string }>
   const { id } = await context.params;
   const listing = await db.serviceListing.findUnique({
     where: { id },
-    include: { provider: { select: { name: true } }, reviews: true }
+    include: { localPro: { select: { name: true } }, reviews: true }
   });
 
   if (!listing) {
@@ -20,7 +20,7 @@ export async function GET(_: Request, context: { params: Promise<{ id: string }>
 export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
-    const user = await requireRole("PROVIDER");
+    const user = await requireRole("LOCAL_PRO");
     const payload = await request.json();
     const highlights =
       typeof payload.highlights === "string"
@@ -46,7 +46,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     }
 
     const listing = await db.serviceListing.findUnique({ where: { id } });
-    if (!listing || listing.providerId !== user.id) {
+    if (!listing || listing.localProId !== user.id) {
       return NextResponse.json({ error: "Not found." }, { status: 404 });
     }
 
@@ -71,9 +71,9 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
 export async function DELETE(_: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
-    const user = await requireRole("PROVIDER");
+    const user = await requireRole("LOCAL_PRO");
     const listing = await db.serviceListing.findUnique({ where: { id } });
-    if (!listing || listing.providerId !== user.id) {
+    if (!listing || listing.localProId !== user.id) {
       return NextResponse.json({ error: "Not found." }, { status: 404 });
     }
 

@@ -12,7 +12,7 @@ export default async function ListingDetailPage({
   const listing = await db.serviceListing.findUnique({
     where: { id },
     include: {
-      provider: { select: { name: true } },
+      localPro: { select: { name: true } },
       reviews: true
     }
   });
@@ -33,7 +33,7 @@ export default async function ListingDetailPage({
             {listing.serviceArea ? <p className="muted">Service area: {listing.serviceArea}</p> : null}
             <p>{listing.description}</p>
             <div style={{ display: "flex", gap: 16, marginTop: 16, flexWrap: "wrap" }}>
-              <span className="pill">{listing.provider.name}</span>
+              <span className="pill">{listing.localPro.name}</span>
               <span className="muted">
                 {rating ? `${rating.toFixed(1)} (${listing.reviews.length} reviews)` : "New"}
               </span>

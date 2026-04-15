@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
 const PROTECTED_ROUTES: { path: string; roles?: string[] }[] = [
-  { path: "/bookings", roles: ["CUSTOMER", "PROVIDER"] },
-  { path: "/providers", roles: ["PROVIDER"] },
+  { path: "/bookings", roles: ["CUSTOMER", "LOCAL_PRO"] },
+  { path: "/local-pros", roles: ["LOCAL_PRO"] },
   { path: "/admin", roles: ["ADMIN"] },
   { path: "/profile" }
 ];

@@ -13,8 +13,8 @@ async function main() {
       name: "Lena Provider",
       email: "provider@localpulse.dev",
       passwordHash,
-      role: "PROVIDER",
-      providerProfile: {
+      role: "LOCAL_PRO",
+      localProProfile: {
         create: {
           displayName: "Lena Provider",
           bio: "Trusted local service provider.",
@@ -26,7 +26,7 @@ async function main() {
 
   await prisma.serviceListing.create({
     data: {
-      providerId: provider.id,
+      localProId: provider.id,
       title: "Home Cleaning Deluxe",
       description: "Deep clean service with eco-friendly supplies.",
       category: "Home Care",

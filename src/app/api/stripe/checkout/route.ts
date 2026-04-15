@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       where: { id: bookingId },
       include: {
         listing: true,
-        provider: { include: { providerProfile: true } },
+        localPro: { include: { localProProfile: true } },
         payment: true
       }
     });
@@ -27,9 +27,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Booking not found." }, { status: 404 });
     }
 
-    const destination = booking.provider.providerProfile?.stripeAccountId;
+    const destination = booking.localPro.localProProfile?.stripeAccountId;
     if (!destination) {
-      return NextResponse.json({ error: "Provider not connected to Stripe." }, { status: 400 });
+      return NextResponse.json({ error: "Local Pro not connected to Stripe." }, { status: 400 });
     }
 
     const successUrl = process.env.STRIPE_SUCCESS_URL ?? "http://localhost:3000/bookings";

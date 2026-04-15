@@ -30,8 +30,8 @@ export async function POST(request: Request) {
         }
       });
 
-      if (role === "PROVIDER") {
-        await db.providerProfile.create({
+      if (role === "LOCAL_PRO") {
+        await db.localProProfile.create({
           data: {
             userId: user.id,
             displayName: name

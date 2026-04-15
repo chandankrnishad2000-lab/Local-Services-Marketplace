@@ -34,7 +34,7 @@ export async function GET(request: Request) {
         : {})
     },
     include: {
-      provider: { select: { name: true } },
+      localPro: { select: { name: true } },
       reviews: true
     }
   });
@@ -44,7 +44,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const user = await requireRole("PROVIDER");
+    const user = await requireRole("LOCAL_PRO");
     const payload = await request.json();
     const highlights =
       typeof payload.highlights === "string"
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
         ...parsed.data,
         highlights: parsed.data.highlights ?? [],
         requirements: parsed.data.requirements ?? [],
-        providerId: user.id,
+        localProId: user.id,
         status: "ACTIVE"
       }
     });

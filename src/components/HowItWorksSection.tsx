@@ -10,7 +10,7 @@ export default function HowItWorksSection() {
     {
       number: 2,
       title: 'Compare & Read Reviews',
-      description: 'Check ratings, reviews, and pricing from multiple providers'
+      description: 'Check ratings, reviews, and pricing from multiple local pros'
     },
     {
       number: 3,

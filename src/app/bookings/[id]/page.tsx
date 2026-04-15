@@ -6,7 +6,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
   const { id } = await params;
   const booking = await db.booking.findUnique({
     where: { id },
-    include: { listing: true, payment: true, customer: true, provider: true }
+    include: { listing: true, payment: true, customer: true, localPro: true }
   });
 
   if (!booking) return notFound();
@@ -16,7 +16,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       <div className="card" style={{ display: "grid", gap: 12 }}>
         <h2>{booking.listing.title}</h2>
         <p className="muted">Customer: {booking.customer.name}</p>
-        <p className="muted">Provider: {booking.provider.name}</p>
+        <p className="muted">Local Pro: {booking.localPro.name}</p>
         <p>Status: {booking.status}</p>
         <p>Service: {formatMoney(booking.totalCents, booking.listing.currency)}</p>
         <p>Tip: {formatMoney(booking.tipCents, booking.listing.currency)}</p>

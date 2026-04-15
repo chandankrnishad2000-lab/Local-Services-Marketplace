@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-type InterfaceType = "CUSTOMER" | "PROVIDER" | "ADMIN";
+type InterfaceType = "CUSTOMER" | "LOCAL_PRO" | "ADMIN";
 
 const interfaceConfig: Record<
   InterfaceType,
@@ -18,17 +18,17 @@ const interfaceConfig: Record<
     subtitle: "Book trusted local services quickly.",
     metrics: [
       { label: "Bookings", value: "24" },
-      { label: "Saved Providers", value: "8" },
+      { label: "Saved Local Pros", value: "8" },
       { label: "Avg. Rating", value: "4.8" }
     ],
     features: [
-      { title: "Smart Search", description: "Find providers by category and location.", status: "Live" },
+      { title: "Smart Search", description: "Find local pros by category and location.", status: "Live" },
       { title: "Instant Booking", description: "Schedule services with one-click slots.", status: "Live" },
       { title: "Offer Alerts", description: "Get notified on seasonal discounts.", status: "New" }
     ]
   },
-  PROVIDER: {
-    title: "Provider Interface",
+  LOCAL_PRO: {
+    title: "Local Pro Interface",
     subtitle: "Manage services, bookings, and earnings.",
     metrics: [
       { label: "Active Listings", value: "12" },
@@ -47,7 +47,7 @@ const interfaceConfig: Record<
     metrics: [
       { label: "Total Users", value: "3,240" },
       { label: "Open Reports", value: "14" },
-      { label: "Verified Providers", value: "1,105" }
+      { label: "Verified Local Pros", value: "1,105" }
     ],
     features: [
       { title: "Moderation Queue", description: "Review listings and reports faster.", status: "Live" },
@@ -79,7 +79,7 @@ export default function BootstrapExample() {
               <p className="text-muted mb-3">Switch between interfaces and preview dedicated feature sets.</p>
 
               <div className="btn-group" role="group" aria-label="Interface selector">
-                {(["CUSTOMER", "PROVIDER", "ADMIN"] as InterfaceType[]).map((type) => (
+                {(["CUSTOMER", "LOCAL_PRO", "ADMIN"] as InterfaceType[]).map((type) => (
                   <button
                     key={type}
                     type="button"
@@ -157,6 +157,86 @@ export default function BootstrapExample() {
               <hr className="my-4" />
               <div className="alert alert-success mb-0" role="alert">
                 Active interface: <strong>{activeInterface}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Separate Admin Section */}
+      <div className="row g-4 mt-2">
+        <div className="col-12">
+          <div className="card border-danger border-3 shadow-lg h-100" style={{ borderRadius: "0.5rem" }}>
+            <div className="card-header bg-danger text-white">
+              <h2 className="h5 mb-0">🛡️ Admin Control Panel</h2>
+            </div>
+            <div className="card-body">
+              <p className="text-muted mb-4">Comprehensive platform administration and monitoring tools.</p>
+
+              <div className="row g-3 mb-4">
+                <div className="col-12 col-sm-6 col-lg-4">
+                  <div className="p-3 rounded border border-danger bg-light h-100">
+                    <p className="small text-muted mb-1">Total Users</p>
+                    <p className="h5 mb-0 text-danger fw-bold">3,240</p>
+                  </div>
+                </div>
+                <div className="col-12 col-sm-6 col-lg-4">
+                  <div className="p-3 rounded border border-warning bg-light h-100">
+                    <p className="small text-muted mb-1">Open Reports</p>
+                    <p className="h5 mb-0 text-warning fw-bold">14</p>
+                  </div>
+                </div>
+                <div className="col-12 col-sm-6 col-lg-4">
+                  <div className="p-3 rounded border border-info bg-light h-100">
+                    <p className="small text-muted mb-1">Verified Local Pros</p>
+                    <p className="h5 mb-0 text-info fw-bold">1,105</p>
+                  </div>
+                </div>
+              </div>
+
+              <h5 className="h6 mb-3">Admin Features</h5>
+              <div className="list-group">
+                <div className="list-group-item d-flex justify-content-between align-items-start gap-3">
+                  <div>
+                    <p className="fw-semibold mb-1">📋 Moderation Queue</p>
+                    <p className="text-muted mb-0 small">Review listings and reports faster.</p>
+                  </div>
+                  <span className="badge bg-success">Live</span>
+                </div>
+                <div className="list-group-item d-flex justify-content-between align-items-start gap-3">
+                  <div>
+                    <p className="fw-semibold mb-1">🚨 Fraud Signals</p>
+                    <p className="text-muted mb-0 small">Flag unusual payment behavior.</p>
+                  </div>
+                  <span className="badge bg-info text-dark">New</span>
+                </div>
+                <div className="list-group-item d-flex justify-content-between align-items-start gap-3">
+                  <div>
+                    <p className="fw-semibold mb-1">👥 Role Controls</p>
+                    <p className="text-muted mb-0 small">Manage user permissions safely.</p>
+                  </div>
+                  <span className="badge bg-success">Live</span>
+                </div>
+                <div className="list-group-item d-flex justify-content-between align-items-start gap-3">
+                  <div>
+                    <p className="fw-semibold mb-1">📊 Analytics Dashboard</p>
+                    <p className="text-muted mb-0 small">View platform metrics and trends.</p>
+                  </div>
+                  <span className="badge bg-warning text-dark">Beta</span>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-top">
+                <h5 className="h6 mb-3">Admin Actions</h5>
+                <div className="d-grid gap-2 d-md-flex">
+                  <button type="button" className="btn btn-danger flex-fill">🔒 Ban User</button>
+                  <button type="button" className="btn btn-warning text-dark flex-fill">⚠️ Flag Content</button>
+                  <button type="button" className="btn btn-info text-white flex-fill">✅ Verify Local Pro</button>
+                </div>
+              </div>
+
+              <div className="alert alert-warning mt-4 mb-0" role="alert">
+                <strong>⚠️ Security Notice:</strong> All admin actions are logged and audited for compliance.
               </div>
             </div>
           </div>

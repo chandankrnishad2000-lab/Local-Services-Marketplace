@@ -5,10 +5,10 @@ import { requireRole } from "@/lib/access";
 
 export async function GET() {
   try {
-    const user = await requireRole(["CUSTOMER", "PROVIDER", "ADMIN"]);
+    const user = await requireRole(["CUSTOMER", "LOCAL_PRO", "ADMIN"]);
     const bookings = await db.booking.findMany({
       where: {
-        OR: [{ customerId: user.id }, { providerId: user.id }]
+        OR: [{ customerId: user.id }, { localProId: user.id }]
       },
       include: { listing: true, payment: true },
       orderBy: { createdAt: "desc" }
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
     const listing = await db.serviceListing.findUnique({
       where: { id: parsed.data.listingId },
-      include: { provider: true }
+      include: { localPro: true }
     });
 
     if (!listing || listing.status !== "ACTIVE") {
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
       data: {
         listingId: listing.id,
         customerId: user.id,
-        providerId: listing.providerId,
+        localProId: listing.localProId,
         startAt: new Date(parsed.data.startAt),
         endAt: new Date(parsed.data.endAt),
         notes: parsed.data.notes,

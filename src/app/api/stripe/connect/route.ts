@@ -7,10 +7,10 @@ export const runtime = "nodejs";
 
 export async function POST() {
   try {
-    const user = await requireRole("PROVIDER");
+    const user = await requireRole("LOCAL_PRO");
     const baseUrl = process.env.APP_BASE_URL ?? "http://localhost:3000";
 
-    const profile = await db.providerProfile.findUnique({ where: { userId: user.id } });
+    const profile = await db.localProProfile.findUnique({ where: { userId: user.id } });
 
     const accountId = profile?.stripeAccountId
       ? profile.stripeAccountId
@@ -20,7 +20,7 @@ export async function POST() {
         })).id;
 
     if (!profile?.stripeAccountId) {
-      await db.providerProfile.update({
+      await db.localProProfile.update({
         where: { userId: user.id },
         data: { stripeAccountId: accountId }
       });

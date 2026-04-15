@@ -10,14 +10,14 @@ export default function TestimonialsSection() {
     },
     {
       name: 'Raj Kumar',
-      role: 'Service Provider',
+      role: 'Local Pro',
       text: 'This platform has helped me grow my cleaning business. The booking system is seamless.',
       rating: 5
     },
     {
       name: 'Anjali Patel',
       role: 'Customer',
-      text: 'Great experience getting my AC serviced. The provider was very professional and the price was transparent.',
+      text: 'Great experience getting my AC serviced. The local pro was very professional and the price was transparent.',
       rating: 5
     }
   ];

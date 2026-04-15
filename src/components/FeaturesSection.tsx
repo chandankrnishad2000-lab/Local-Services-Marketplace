@@ -5,7 +5,7 @@ export default function FeaturesSection() {
     {
       icon: '✓',
       title: 'Verified Professionals',
-      description: 'All providers are vetted and rated by real users'
+      description: 'All local pros are vetted and rated by real users'
     },
     {
       icon: '💳',

@@ -29,19 +29,19 @@ export default function EnhancedFooter() {
             </ul>
           </div>
           <div className="col-md-3">
-            <h6 className="fw-bold mb-3">For Providers</h6>
+            <h6 className="fw-bold mb-3">For Local Pros</h6>
             <ul className="list-unstyled small">
               <li className="mb-2">
-                <Link href="/providers/dashboard" className="text-decoration-none text-muted hover-text-light">Dashboard</Link>
+                <Link href="/local-pros/dashboard" className="text-decoration-none text-muted hover-text-light">Dashboard</Link>
               </li>
               <li className="mb-2">
-                <Link href="/providers/listings/new" className="text-decoration-none text-muted hover-text-light">Create Listing</Link>
+                <Link href="/local-pros/listings/new" className="text-decoration-none text-muted hover-text-light">Create Listing</Link>
               </li>
               <li className="mb-2">
                 <Link href="#" className="text-decoration-none text-muted hover-text-light">Earnings</Link>
               </li>
               <li className="mb-2">
-                <Link href="#" className="text-decoration-none text-muted hover-text-light">Become Provider</Link>
+                <Link href="#" className="text-decoration-none text-muted hover-text-light">Become Local Pro</Link>
               </li>
             </ul>
           </div>
