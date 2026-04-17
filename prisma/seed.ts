@@ -1,11 +1,30 @@
 import { PrismaClient } from "@prisma/client";
-import { hashPassword } from "../src/lib/auth";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
+
+async function hashPassword(password: string): Promise<string> {
+  const salt = await bcrypt.genSalt(10);
+  return bcrypt.hash(password, salt);
+}
 
 async function main() {
   const passwordHash = await hashPassword("Password123!");
 
+  // Create a test customer user
+  const customer = await prisma.user.upsert({
+    where: { email: "customer@localpulse.dev" },
+    update: {},
+    create: {
+      name: "John Customer",
+      email: "customer@localpulse.dev",
+      passwordHash,
+      role: "CUSTOMER"
+    }
+  });
+  console.log("Created customer user:", customer.email);
+
+  // Create a test local pro user
   const provider = await prisma.user.upsert({
     where: { email: "provider@localpulse.dev" },
     update: {},
@@ -23,9 +42,27 @@ async function main() {
       }
     }
   });
+  console.log("Created local pro user:", provider.email);
 
-  await prisma.serviceListing.create({
-    data: {
+  // Create a test admin user
+  const admin = await prisma.user.upsert({
+    where: { email: "admin@localpulse.dev" },
+    update: {},
+    create: {
+      name: "Admin User",
+      email: "admin@localpulse.dev",
+      passwordHash,
+      role: "ADMIN"
+    }
+  });
+  console.log("Created admin user:", admin.email);
+
+  // Create a service listing
+  await prisma.serviceListing.upsert({
+    where: { id: "demo-listing-1" },
+    update: {},
+    create: {
+      id: "demo-listing-1",
       localProId: provider.id,
       title: "Home Cleaning Deluxe",
       description: "Deep clean service with eco-friendly supplies.",
@@ -39,6 +76,7 @@ async function main() {
       status: "ACTIVE"
     }
   });
+  console.log("Created sample service listing");
 }
 
 main()
