@@ -1,11 +1,9 @@
-import { getCurrentUser } from "@/lib/current-user";
-import { db } from "@/lib/db";
+import { apiFetchServer } from "@/lib/api-server";
 
 export default async function AdminPage() {
-  const user = await getCurrentUser();
-  const reports = user
-    ? await db.report.findMany({ include: { listing: true, reporter: true }, take: 10 })
-    : [];
+  const res = await apiFetchServer("/api/reports");
+  const data = res.ok ? await res.json() : { reports: [] };
+  const reports = data.reports ?? [];
 
   return (
     <div className="container section">
@@ -15,7 +13,7 @@ export default async function AdminPage() {
         <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
           {reports.map((report) => (
             <div key={report.id} className="card" style={{ background: "#f9fbfd" }}>
-              <h3>{report.listing.title}</h3>
+              <h3>{report.listingTitle}</h3>
               <p className="muted">Reason: {report.reason}</p>
               <p className="muted">Status: {report.status}</p>
             </div>

@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/Button";
+import { apiFetch } from "@/lib/api";
 
 export default function NewListingPage() {
   const router = useRouter();
@@ -27,9 +28,8 @@ export default function NewListingPage() {
       imageUrl: form.get("imageUrl")
     };
 
-    const res = await fetch("/api/listings", {
+    const res = await apiFetch("/api/listings", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
 

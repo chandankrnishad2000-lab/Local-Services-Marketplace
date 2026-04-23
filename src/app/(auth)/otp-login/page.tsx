@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { apiFetch } from "@/lib/api";
 
 export default function OTPLoginPage() {
   const router = useRouter();
@@ -21,9 +22,8 @@ export default function OTPLoginPage() {
     setMessage(null);
 
     try {
-      const res = await fetch("/api/auth/otp/request", {
+      const res = await apiFetch("/api/auth/otp/request", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email })
       });
 
@@ -51,9 +51,8 @@ export default function OTPLoginPage() {
     setError(null);
 
     try {
-      const res = await fetch("/api/auth/otp/verify", {
+      const res = await apiFetch("/api/auth/otp/verify", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, code })
       });
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
+import { apiFetch } from '@/lib/api';
 
 interface User {
   id: string;
@@ -30,7 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function fetchCurrentUser() {
     try {
-      const response = await fetch('/api/auth/me');
+      const response = await apiFetch('/api/auth/me');
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
@@ -44,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function logout() {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await apiFetch('/api/auth/logout', { method: 'POST' });
       setUser(null);
     } catch (error) {
       console.error('Logout failed:', error);

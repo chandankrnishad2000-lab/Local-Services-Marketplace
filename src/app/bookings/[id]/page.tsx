@@ -1,27 +1,26 @@
 import { notFound } from "next/navigation";
-import { db } from "@/lib/db";
 import { formatMoney } from "@/lib/utils";
+import { apiFetchServer } from "@/lib/api";
 
 export default async function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const booking = await db.booking.findUnique({
-    where: { id },
-    include: { listing: true, payment: true, customer: true, localPro: true }
-  });
-
+  const res = await apiFetchServer(`/api/bookings/${id}`);
+  if (!res.ok) return notFound();
+  const data = await res.json();
+  const booking = data.booking;
   if (!booking) return notFound();
 
   return (
     <div className="container section">
       <div className="card" style={{ display: "grid", gap: 12 }}>
-        <h2>{booking.listing.title}</h2>
-        <p className="muted">Customer: {booking.customer.name}</p>
-        <p className="muted">Local Pro: {booking.localPro.name}</p>
+        <h2>{booking.listingTitle}</h2>
+        <p className="muted">Customer: {booking.customerName}</p>
+        <p className="muted">Local Pro: {booking.localProName}</p>
         <p>Status: {booking.status}</p>
-        <p>Service: {formatMoney(booking.totalCents, booking.listing.currency)}</p>
-        <p>Tip: {formatMoney(booking.tipCents, booking.listing.currency)}</p>
-        <p>Total: {formatMoney(booking.totalCents + booking.tipCents, booking.listing.currency)}</p>
-        <p>Payment: {booking.payment?.status ?? "Not started"}</p>
+        <p>Service: {formatMoney(booking.total_cents, booking.listingCurrency)}</p>
+        <p>Tip: {formatMoney(booking.tip_cents, booking.listingCurrency)}</p>
+        <p>Total: {formatMoney(booking.total_cents + booking.tip_cents, booking.listingCurrency)}</p>
+        <p>Payment: {booking.paymentStatus ?? "Not started"}</p>
       </div>
     </div>
   );

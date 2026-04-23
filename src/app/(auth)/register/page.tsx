@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { apiFetch } from "@/lib/api";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -26,9 +27,8 @@ export default function RegisterPage() {
     }
 
     try {
-      const res = await fetch("/api/auth/register", {
+      const res = await apiFetch("/api/auth/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
 
@@ -108,7 +108,7 @@ export default function RegisterPage() {
             <div className="relative">
               <select name="role" defaultValue="CUSTOMER" className="form-select flex w-full rounded-xl text-slate-900 focus:outline-0 focus:ring-2 focus:ring-[#ec5b13] border border-slate-200 bg-white h-14 pl-4 pr-10 text-base font-normal leading-normal appearance-none cursor-pointer">
                 <option value="CUSTOMER">Customer (Looking to book services)</option>
-                <option value="PROVIDER">Provider (Looking to offer services)</option>
+                <option value="LOCAL_PRO">Local Pro (Looking to offer services)</option>
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
                 <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>

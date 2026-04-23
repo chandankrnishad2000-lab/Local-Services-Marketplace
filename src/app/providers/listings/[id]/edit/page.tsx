@@ -1,9 +1,12 @@
-import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
+import { apiFetchServer } from "@/lib/api-server";
 
 export default async function EditListingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const listing = await db.serviceListing.findUnique({ where: { id } });
+  const res = await apiFetchServer(`/api/listings/${id}`);
+  if (!res.ok) return notFound();
+  const data = await res.json();
+  const listing = data.listing;
   if (!listing) return notFound();
 
   return (

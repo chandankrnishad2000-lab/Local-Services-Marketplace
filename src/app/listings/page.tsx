@@ -1,7 +1,7 @@
 import ListingCard from "@/components/ListingCard";
 import Section from "@/components/Section";
-import { db } from "@/lib/db";
 import { safeJson } from "@/lib/utils";
+import { apiFetchServer } from "@/lib/api-server";
 
 function parseNumber(value: string | undefined) {
   if (!value) return undefined;
@@ -21,59 +21,34 @@ export default async function ListingsPage({
   const minPrice = parseNumber(typeof resolvedParams.minPrice === "string" ? resolvedParams.minPrice : undefined);
   const maxPrice = parseNumber(typeof resolvedParams.maxPrice === "string" ? resolvedParams.maxPrice : undefined);
 
-  const listings = await db.serviceListing.findMany({
-    where: {
-      status: "ACTIVE",
-      ...(category ? { category } : {}),
-      ...(location ? { location: { contains: location, mode: "insensitive" } } : {}),
-      ...(q
-        ? {
-            OR: [
-              { title: { contains: q, mode: "insensitive" } },
-              { description: { contains: q, mode: "insensitive" } }
-            ]
-          }
-        : {}),
-      ...(minPrice || maxPrice
-        ? {
-            priceCents: {
-              ...(minPrice ? { gte: minPrice } : {}),
-              ...(maxPrice ? { lte: maxPrice } : {})
-            }
-          }
-        : {})
-    },
-    include: {
-      localPro: { select: { name: true } },
-      reviews: true
-    },
-    orderBy: { createdAt: "desc" },
-    take: 24
-  });
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  if (category) params.set("category", category);
+  if (location) params.set("location", location);
+  if (minPrice !== undefined) params.set("minPrice", String(minPrice));
+  if (maxPrice !== undefined) params.set("maxPrice", String(maxPrice));
 
-  const categories = await db.serviceListing.findMany({
-    where: { status: "ACTIVE" },
-    select: { category: true },
-    distinct: ["category"],
-    orderBy: { category: "asc" }
-  });
+  const res = await apiFetchServer(`/api/listings?${params.toString()}`);
+  const data = res.ok ? await res.json() : { listings: [] };
+  const listings = data.listings ?? [];
+
+  const categories = Array.from(
+    new Set(listings.map((item: { category: string }) => item.category))
+  ).map((cat) => ({ category: cat }));
 
   const cards = safeJson(
-    listings.map((listing) => {
-      const ratingTotal = listing.reviews.reduce((sum, review) => sum + review.rating, 0);
-      const rating = listing.reviews.length ? ratingTotal / listing.reviews.length : undefined;
-
+    listings.map((listing: any) => {
       return {
         id: listing.id,
         title: listing.title,
         category: listing.category,
         location: listing.location,
-        durationMinutes: listing.durationMinutes,
-        priceCents: listing.priceCents,
+        durationMinutes: listing.duration_minutes ?? listing.durationMinutes,
+        priceCents: listing.price_cents ?? listing.priceCents,
         currency: listing.currency,
-        providerName: listing.localPro.name,
-        rating,
-        reviewCount: listing.reviews.length
+        providerName: listing.localProName ?? listing.localPro?.name,
+        rating: listing.rating ?? null,
+        reviewCount: listing.reviewCount ?? 0
       };
     })
   );

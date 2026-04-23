@@ -1,18 +1,11 @@
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/current-user";
-import { db } from "@/lib/db";
 import { formatMoney } from "@/lib/utils";
+import { apiFetchServer } from "@/lib/api-server";
 
 export default async function BookingsPage() {
-  const user = await getCurrentUser();
-
-  const bookings = user
-    ? await db.booking.findMany({
-        where: { customerId: user.id },
-        include: { listing: true, payment: true },
-        orderBy: { createdAt: "desc" }
-      })
-    : [];
+  const res = await apiFetchServer("/api/bookings");
+  const data = res.ok ? await res.json() : { bookings: [] };
+  const bookings = data.bookings ?? [];
 
   return (
     <div className="container section">
@@ -26,11 +19,11 @@ export default async function BookingsPage() {
               className="card"
               style={{ background: "#f9fbfd" }}
             >
-              <h3>{booking.listing.title}</h3>
+              <h3>{booking.listingTitle}</h3>
               <p className="muted">Status: {booking.status}</p>
-              <p className="muted">Payment: {booking.payment?.status ?? "Not started"}</p>
+              <p className="muted">Payment: {booking.paymentStatus ?? "Not started"}</p>
               <p className="muted">
-                Total: {formatMoney(booking.totalCents + booking.tipCents, booking.listing.currency)}
+                Total: {formatMoney(booking.total_cents + booking.tip_cents, booking.listingCurrency)}
               </p>
             </Link>
           ))}

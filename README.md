@@ -22,10 +22,11 @@ Full-stack marketplace where customers book local services and providers manage 
    - `npm install`
 2. Create a database and set env vars:
    - Copy `.env.example` to `.env`
-3. Generate Prisma client and run migrations:
-   - `npm run db:generate`
-   - `npm run db:migrate`
-4. Start dev server:
+3. Start the PHP + SQLite backend:
+   - `cd backend`
+   - `cp .env.example .env`
+   - `php -S localhost:8000 -t public`
+4. Start the Next.js frontend:
    - `npm run dev`
 
 ## Environment
@@ -39,5 +40,5 @@ See `.env.example` for all required values.
 - `npm run db:studio` - Prisma Studio
 
 ## Notes
-- Stripe webhooks require a public URL (use Stripe CLI or ngrok in development).
-- For real payouts, complete provider onboarding in the Provider Dashboard.
+- Stripe endpoints are **dummy** in the PHP backend.
+- OTP responses include the code for local testing.

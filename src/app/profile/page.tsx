@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { apiFetch } from "@/lib/api";
 
 interface User {
   id: string;
@@ -21,7 +22,7 @@ export default function ProfilePage() {
   useEffect(() => {
     async function fetchUser() {
       try {
-        const res = await fetch("/api/auth/me");
+        const res = await apiFetch("/api/auth/me");
         if (!res.ok) {
           router.push("/login");
           return;
@@ -40,7 +41,7 @@ export default function ProfilePage() {
 
   async function handleLogout() {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await apiFetch("/api/auth/logout", { method: "POST" });
       router.push("/login");
     } catch (err) {
       setError("Failed to logout");

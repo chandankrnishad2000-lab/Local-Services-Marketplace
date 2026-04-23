@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/current-user";
+import { apiFetchServer } from "@/lib/api-server";
 
 const links = [
   { href: "/listings", label: "Explore" },
@@ -11,7 +11,9 @@ const links = [
 ];
 
 export default async function Header() {
-  const user = await getCurrentUser();
+  const res = await apiFetchServer("/api/auth/me");
+  const data = res.ok ? await res.json() : { user: null };
+  const user = data.user;
 
   return (
     <header className="header">

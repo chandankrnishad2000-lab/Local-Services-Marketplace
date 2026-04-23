@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
-import { db } from "@/lib/db";
 import { formatMoney } from "@/lib/utils";
 import BookingForm from "@/components/BookingForm";
+import { apiFetchServer } from "@/lib/api-server";
 
 export default async function ListingDetailPage({
   params
@@ -9,18 +9,12 @@ export default async function ListingDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const listing = await db.serviceListing.findUnique({
-    where: { id },
-    include: {
-      localPro: { select: { name: true } },
-      reviews: true
-    }
-  });
-
+  const res = await apiFetchServer(`/api/listings/${id}`);
+  if (!res.ok) return notFound();
+  const data = await res.json();
+  const listing = data.listing;
   if (!listing) return notFound();
-
-  const ratingTotal = listing.reviews.reduce((sum, review) => sum + review.rating, 0);
-  const rating = listing.reviews.length ? ratingTotal / listing.reviews.length : null;
+  const rating = listing.rating ?? null;
 
   return (
     <div className="container section" style={{ display: "grid", gap: 32 }}>
@@ -33,12 +27,12 @@ export default async function ListingDetailPage({
             {listing.serviceArea ? <p className="muted">Service area: {listing.serviceArea}</p> : null}
             <p>{listing.description}</p>
             <div style={{ display: "flex", gap: 16, marginTop: 16, flexWrap: "wrap" }}>
-              <span className="pill">{listing.localPro.name}</span>
+              <span className="pill">{listing.localProName ?? "Local Pro"}</span>
               <span className="muted">
-                {rating ? `${rating.toFixed(1)} (${listing.reviews.length} reviews)` : "New"}
+                {rating ? `${rating.toFixed(1)} (${listing.reviewCount ?? 0} reviews)` : "New"}
               </span>
-              <span className="muted">{listing.durationMinutes} min</span>
-              <span className="price">{formatMoney(listing.priceCents, listing.currency)}</span>
+              <span className="muted">{listing.duration_minutes ?? listing.durationMinutes} min</span>
+              <span className="price">{formatMoney(listing.price_cents ?? listing.priceCents, listing.currency)}</span>
             </div>
           </div>
           {listing.imageUrl ? (
@@ -74,7 +68,7 @@ export default async function ListingDetailPage({
           <h2>Request a booking</h2>
           <BookingForm
             listingId={listing.id}
-            priceCents={listing.priceCents}
+            priceCents={listing.price_cents ?? listing.priceCents}
             currency={listing.currency}
           />
         </div>

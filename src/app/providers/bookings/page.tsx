@@ -1,17 +1,10 @@
-import { getCurrentUser } from "@/lib/current-user";
-import { db } from "@/lib/db";
 import { formatMoney } from "@/lib/utils";
+import { apiFetchServer } from "@/lib/api-server";
 
 export default async function LocalProBookingsPage() {
-  const user = await getCurrentUser();
-
-  const bookings = user
-    ? await db.booking.findMany({
-        where: { localProId: user.id },
-        include: { listing: true, customer: true },
-        orderBy: { createdAt: "desc" }
-      })
-    : [];
+  const res = await apiFetchServer("/api/bookings");
+  const data = res.ok ? await res.json() : { bookings: [] };
+  const bookings = data.bookings ?? [];
 
   return (
     <div className="container section">
@@ -21,11 +14,11 @@ export default async function LocalProBookingsPage() {
         <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
           {bookings.map((booking) => (
             <div key={booking.id} className="card" style={{ background: "#f9fbfd" }}>
-              <h3>{booking.listing.title}</h3>
-              <p className="muted">Customer: {booking.customer.name}</p>
+              <h3>{booking.listingTitle}</h3>
+              <p className="muted">Customer: {booking.customerName ?? "Customer"}</p>
               <p className="muted">Status: {booking.status}</p>
               <p className="muted">
-                Total: {formatMoney(booking.totalCents + booking.tipCents, booking.listing.currency)}
+                Total: {formatMoney(booking.total_cents + booking.tip_cents, booking.listingCurrency)}
               </p>
             </div>
           ))}

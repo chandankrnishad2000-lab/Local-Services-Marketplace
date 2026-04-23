@@ -1,8 +1,12 @@
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/current-user";
+import { apiFetchServer } from "@/lib/api-server";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
 export default async function LocalProDashboard() {
-  const user = await getCurrentUser();
+  const res = await apiFetchServer("/api/auth/me");
+  const data = res.ok ? await res.json() : { user: null };
+  const user = data.user;
 
   return (
     <div className="container section">
@@ -20,7 +24,7 @@ export default async function LocalProDashboard() {
           <Link href="/local-pros/bookings" className="button outline">
             View bookings
           </Link>
-          <form action="/api/stripe/connect" method="POST">
+          <form action={`${API_BASE}/api/stripe/connect`} method="POST">
             <button className="button ghost" type="submit">
               Connect Stripe
             </button>

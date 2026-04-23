@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import Button from "@/components/Button";
 import { formatMoney } from "@/lib/utils";
+import { apiFetch } from "@/lib/api";
 
 const tipOptions = [0, 500, 1000, 2000];
 
@@ -26,9 +27,8 @@ export default function BookingForm({
     const form = new FormData(event.currentTarget);
     const payload = Object.fromEntries(form.entries());
 
-    const res = await fetch("/api/bookings", {
+    const res = await apiFetch("/api/bookings", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...payload, listingId, tipCents })
     });
 
@@ -38,9 +38,8 @@ export default function BookingForm({
       return;
     }
 
-    const checkout = await fetch("/api/stripe/checkout", {
+    const checkout = await apiFetch("/api/stripe/checkout", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ bookingId: data.bookingId })
     });
 
