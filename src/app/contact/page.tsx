@@ -143,7 +143,7 @@ export default function ContactPage() {
       <section className="py-5 bg-primary text-white">
         <div className="container text-center">
           <h2 className="fw-bold mb-3">Ready to Get Started?</h2>
-          <p className="lead mb-4">Join thousands of customers and local pros on LocalPulse</p>
+          <p className="lead mb-4">Join thousands of customers and local pros on Local Services</p>
           <div className="d-flex gap-3 justify-content-center flex-wrap">
             <Link href="/register" className="btn btn-light btn-lg">
               Sign Up Now

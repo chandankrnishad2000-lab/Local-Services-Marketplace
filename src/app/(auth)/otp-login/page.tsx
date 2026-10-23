@@ -4,9 +4,11 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function OTPLoginPage() {
   const router = useRouter();
+  const { refreshUser } = useAuth();
   const [step, setStep] = useState<"email" | "verify">("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -40,7 +42,9 @@ export default function OTPLoginPage() {
       setStep("verify");
       setLoading(false);
     } catch (err) {
-      setError("Network error. Please try again.");
+      setError(
+        "OTP request failed: backend not reachable. Start the API with: `cd backend && npm start` (and open the site as http://localhost:3000)."
+      );
       setLoading(false);
     }
   }
@@ -64,10 +68,13 @@ export default function OTPLoginPage() {
         return;
       }
 
+      await refreshUser();
       setLoading(false);
       router.push("/listings");
     } catch (err) {
-      setError("Network error. Please try again.");
+      setError(
+        "OTP verify failed: backend not reachable. Start the API with: `cd backend && npm start` (and open the site as http://localhost:3000)."
+      );
       setLoading(false);
     }
   }

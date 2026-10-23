@@ -5,6 +5,7 @@ import { useState } from "react";
 import Button from "@/components/Button";
 import { formatMoney } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 const tipOptions = [0, 500, 1000, 2000];
 
@@ -19,10 +20,21 @@ export default function BookingForm({
 }) {
   const [status, setStatus] = useState<string | null>(null);
   const [tipCents, setTipCents] = useState(0);
+  const { user, isAuthenticated } = useAuth();
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus(null);
+
+    if (!isAuthenticated) {
+      setStatus("Please log in as a customer to book this service.");
+      return;
+    }
+
+    if (user?.role !== "CUSTOMER") {
+      setStatus("Only customers can request bookings. Switch to a customer account.");
+      return;
+    }
 
     const form = new FormData(event.currentTarget);
     const payload = Object.fromEntries(form.entries());
@@ -34,7 +46,7 @@ export default function BookingForm({
 
     const data = await res.json();
     if (!res.ok) {
-      setStatus(data.error ?? "Booking failed.");
+      setStatus(data.error ?? "Booking failed. Please try again.");
       return;
     }
 
@@ -49,7 +61,8 @@ export default function BookingForm({
       return;
     }
 
-    setStatus("Booking created. Payment pending in your dashboard.");
+    setStatus("Booking created. Redirecting to your booking...");
+    window.location.href = `/bookings/${data.bookingId}`;
   }
 
   return (
@@ -85,6 +98,11 @@ export default function BookingForm({
         <h3>{formatMoney(priceCents + tipCents, currency)}</h3>
       </div>
       {status ? <p className="muted">{status}</p> : null}
+      {!isAuthenticated ? (
+        <a className="button ghost" href="/login">
+          Log in to book
+        </a>
+      ) : null}
       <Button type="submit">Request booking</Button>
     </form>
   );

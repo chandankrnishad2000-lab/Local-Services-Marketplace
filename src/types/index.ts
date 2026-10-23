@@ -9,4 +9,5 @@ export type ListingCard = {
   providerName: string;
   rating?: number;
   reviewCount?: number;
+  href?: string;
 };

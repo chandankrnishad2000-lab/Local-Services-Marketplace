@@ -1,20 +1,26 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, API_BASE } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { refreshUser } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [socialNotice, setSocialNotice] = useState<string | null>(null);
+  const [selectedRole, setSelectedRole] = useState("CUSTOMER");
+  const [oauthStatus, setOauthStatus] = useState<{ google: boolean; apple: boolean } | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setError(null);
+    setSocialNotice(null);
 
     const form = new FormData(event.currentTarget);
     const payload = Object.fromEntries(form.entries());
@@ -39,6 +45,7 @@ export default function RegisterPage() {
         return;
       }
 
+      await refreshUser();
       setLoading(false);
       router.push("/listings");
     } catch (err) {
@@ -46,6 +53,21 @@ export default function RegisterPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    let active = true;
+    apiFetch("/api/auth/oauth/status")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!active || !data?.providers) return;
+        setOauthStatus(data.providers);
+      })
+      .catch(() => null);
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div className="relative flex h-auto min-h-[calc(100vh-140px)] w-full flex-col overflow-x-hidden p-6 max-w-md mx-auto">
@@ -106,7 +128,12 @@ export default function RegisterPage() {
           <div className="flex flex-col w-full">
             <p className="text-slate-900 text-sm font-medium leading-normal pb-2">I am signing up as a...</p>
             <div className="relative">
-              <select name="role" defaultValue="CUSTOMER" className="form-select flex w-full rounded-xl text-slate-900 focus:outline-0 focus:ring-2 focus:ring-[#ec5b13] border border-slate-200 bg-white h-14 pl-4 pr-10 text-base font-normal leading-normal appearance-none cursor-pointer">
+              <select
+                name="role"
+                defaultValue="CUSTOMER"
+                onChange={(event) => setSelectedRole(event.target.value)}
+                className="form-select flex w-full rounded-xl text-slate-900 focus:outline-0 focus:ring-2 focus:ring-[#ec5b13] border border-slate-200 bg-white h-14 pl-4 pr-10 text-base font-normal leading-normal appearance-none cursor-pointer"
+              >
                 <option value="CUSTOMER">Customer (Looking to book services)</option>
                 <option value="LOCAL_PRO">Local Pro (Looking to offer services)</option>
               </select>
@@ -118,12 +145,18 @@ export default function RegisterPage() {
 
           {/* Error Message */}
           {error && <p className="text-red-600 text-sm font-medium text-center">{error}</p>}
+          {socialNotice && <p className="text-slate-600 text-sm font-medium text-center">{socialNotice}</p>}
+          {oauthStatus && (!oauthStatus.google || !oauthStatus.apple) && (
+            <p className="text-slate-500 text-sm font-medium text-center">
+              OAuth setup pending for {oauthStatus.google ? "Apple" : oauthStatus.apple ? "Google" : "Google & Apple"}.
+            </p>
+          )}
 
           {/* Terms and Conditions */}
           <div className="flex items-center gap-2 mt-2">
             <input className="rounded border-slate-300 text-[#ec5b13] focus:ring-[#ec5b13] h-4 w-4 bg-white" id="terms" type="checkbox" required />
             <label className="text-sm text-slate-600 leading-tight" htmlFor="terms">
-              I agree to the <Link className="text-[#ec5b13] font-semibold hover:underline" href="#">Terms of Service</Link> and <Link className="text-[#ec5b13] font-semibold hover:underline" href="#">Privacy Policy</Link>
+              I agree to the <Link className="text-[#ec5b13] font-semibold hover:underline" href="/terms">Terms of Service</Link> and <Link className="text-[#ec5b13] font-semibold hover:underline" href="/privacy">Privacy Policy</Link>
             </label>
           </div>
 
@@ -142,7 +175,14 @@ export default function RegisterPage() {
 
         {/* Social Sign-up Buttons */}
         <div className="grid grid-cols-2 gap-4">
-          <button type="button" className="flex items-center justify-center gap-2 h-14 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 transition-colors shadow-sm">
+          <button
+            type="button"
+            className="flex items-center justify-center gap-2 h-14 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 transition-colors shadow-sm"
+            onClick={() => {
+              setSocialNotice(null);
+              window.location.href = `${API_BASE}/api/auth/oauth/google/start?role=${encodeURIComponent(selectedRole)}`;
+            }}
+          >
             <svg className="h-5 w-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
               <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
@@ -151,17 +191,49 @@ export default function RegisterPage() {
             </svg>
             <span className="text-slate-700 font-semibold text-sm">Google</span>
           </button>
-          <button type="button" className="flex items-center justify-center gap-2 h-14 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 transition-colors shadow-sm">
+          <button
+            type="button"
+            className="flex items-center justify-center gap-2 h-14 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 transition-colors shadow-sm"
+            onClick={() => {
+              setSocialNotice(null);
+              window.location.href = `${API_BASE}/api/auth/oauth/apple/start?role=${encodeURIComponent(selectedRole)}`;
+            }}
+          >
             <svg className="h-5 w-5" viewBox="0 0 384 512" xmlns="http://www.w3.org/2000/svg">
               <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"></path>
             </svg>
             <span className="text-slate-700 font-semibold text-sm">Apple</span>
           </button>
+          <button
+            type="button"
+            className="flex items-center justify-center gap-2 h-14 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 transition-colors shadow-sm"
+            onClick={() => setSocialNotice("Facebook sign-up will be added later. Use Google or Apple for now.")}
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22.675 0h-21.35C.595 0 0 .594 0 1.326v21.348C0 23.406.595 24 1.325 24h11.49v-9.294H9.692V11.01h3.123V8.309c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24h-1.918c-1.504 0-1.795.715-1.795 1.763v2.31h3.587l-.467 3.696h-3.12V24h6.116C23.406 24 24 23.406 24 22.674V1.326C24 .594 23.406 0 22.675 0z" fill="#1877F2"></path>
+            </svg>
+            <span className="text-slate-700 font-semibold text-sm">Facebook</span>
+          </button>
+          <button
+            type="button"
+            className="flex items-center justify-center gap-2 h-14 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 transition-colors shadow-sm"
+            onClick={() => setSocialNotice("Phone sign-up will be added later. Use email OTP for now.")}
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.07 21 3 13.93 3 5a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.46.57 3.58a1 1 0 0 1-.24 1.01l-2.21 2.2z" fill="#0F766E"></path>
+            </svg>
+            <span className="text-slate-700 font-semibold text-sm">Phone</span>
+          </button>
         </div>
 
         {/* Login Link */}
         <div className="mt-8 text-center pb-8 border-t border-slate-200 pt-6">
-          <p className="text-slate-600">Already have an account? 
+          <p className="text-slate-600">
+            Prefer OTP?
+            <Link className="text-[#ec5b13] font-bold hover:underline ml-2" href="/otp-login">Login with OTP</Link>
+          </p>
+          <p className="text-slate-600 mt-2">
+            Already have an account?
             <Link className="text-[#ec5b13] font-bold hover:underline ml-2" href="/login">Log In</Link>
           </p>
         </div>

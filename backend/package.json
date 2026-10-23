@@ -1,0 +1,28 @@
+{
+  "name": "local-services-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local Services marketplace backend - Node.js + MongoDB",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "seed": "node scripts/seed.js",
+    "test": "node --test --test-force-exit"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "connect-mongo": "^5.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.1",
+    "express-session": "^1.18.1",
+    "mongoose": "^8.8.4",
+    "node-fetch": "^2.7.0",
+    "stripe": "^16.12.0"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^11.2.0",
+    "supertest": "^7.2.2"
+  }
+}

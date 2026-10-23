@@ -1,9 +1,10 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { Role } from '@prisma/client';
 import { ReactNode } from 'react';
 import Link from 'next/link';
+
+type Role = 'CUSTOMER' | 'LOCAL_PRO' | 'ADMIN';
 
 interface ProtectedProps {
   children: ReactNode;
