@@ -1,119 +1,14 @@
 import ListingCard from "@/components/ListingCard";
 import { safeJson } from "@/lib/utils";
 import { apiFetchServer } from "@/lib/api-server";
+import {
+  getFallbackListings,
+  toListingCard,
+  type ListingRecord
+} from "@/lib/listings";
 import type { ListingCard as ListingCardType } from "@/types";
 
-type ListingRecord = {
-  id: number | string;
-  title: string;
-  category: string;
-  location: string;
-  duration_minutes?: number;
-  durationMinutes?: number;
-  price_cents?: number;
-  priceCents?: number;
-  currency?: string;
-  localProName?: string;
-  localPro?: { name?: string };
-  rating?: number | null;
-  reviewCount?: number;
-};
-
-const fallbackListings: ListingCardType[] = [
-  {
-    id: "demo-1",
-    title: "Premium Home Cleaning",
-    category: "Home Care",
-    location: "Mumbai, MH",
-    durationMinutes: 180,
-    priceCents: 49999,
-    currency: "inr",
-    providerName: "Sparkle Co.",
-    rating: 4.9,
-    reviewCount: 118,
-    href: "/services"
-  },
-  {
-    id: "demo-2",
-    title: "Private Math Tutoring",
-    category: "Education",
-    location: "Bangalore, KA",
-    durationMinutes: 60,
-    priceCents: 39999,
-    currency: "inr",
-    providerName: "Elevate Tutors",
-    rating: 4.8,
-    reviewCount: 76,
-    href: "/services"
-  },
-  {
-    id: "demo-3",
-    title: "Mobile Auto Detailing",
-    category: "Auto",
-    location: "Delhi, DL",
-    durationMinutes: 120,
-    priceCents: 75000,
-    currency: "inr",
-    providerName: "SeaBreeze Auto",
-    rating: 4.7,
-    reviewCount: 52,
-    href: "/services"
-  },
-  {
-    id: "demo-4",
-    title: "Professional Hair Styling",
-    category: "Wellness",
-    location: "Pune, MH",
-    durationMinutes: 90,
-    priceCents: 29999,
-    currency: "inr",
-    providerName: "Salon Bliss",
-    rating: 4.9,
-    reviewCount: 203,
-    href: "/services"
-  },
-  {
-    id: "demo-5",
-    title: "Yoga & Fitness Training",
-    category: "Wellness",
-    location: "Bangalore, KA",
-    durationMinutes: 60,
-    priceCents: 24999,
-    currency: "inr",
-    providerName: "FitLife Academy",
-    rating: 4.8,
-    reviewCount: 145,
-    href: "/services"
-  },
-  {
-    id: "demo-6",
-    title: "Web Development & Design",
-    category: "Tech",
-    location: "Hyderabad, TG",
-    durationMinutes: 240,
-    priceCents: 150000,
-    currency: "inr",
-    providerName: "CodeCraft Studio",
-    rating: 4.9,
-    reviewCount: 89,
-    href: "/services"
-  }
-];
-
-function toListingCard(listing: ListingRecord): ListingCardType {
-  return {
-    id: String(listing.id),
-    title: listing.title,
-    category: listing.category,
-    location: listing.location,
-    durationMinutes: listing.duration_minutes ?? listing.durationMinutes,
-    priceCents: listing.price_cents ?? listing.priceCents ?? 0,
-    currency: listing.currency ?? "inr",
-    providerName: listing.localProName ?? listing.localPro?.name ?? "Local Pro",
-    rating: listing.rating ?? undefined,
-    reviewCount: listing.reviewCount ?? 0
-  };
-}
+const fallbackListings = getFallbackListings("/services");
 
 function parseNumber(value: string | undefined) {
   if (!value) return undefined;

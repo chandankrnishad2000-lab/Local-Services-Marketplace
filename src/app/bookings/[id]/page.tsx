@@ -176,7 +176,7 @@ function BookingDetailInner({ id }: { id: string }) {
     return (
       <div className="container section">
         <h2>Booking not found</h2>
-        <p className="muted">This booking does not exist or you don't have access to it.</p>
+        <p className="muted">This booking does not exist or you don&apos;t have access to it.</p>
         <Link className="button primary" href="/bookings">Back to bookings</Link>
       </div>
     );

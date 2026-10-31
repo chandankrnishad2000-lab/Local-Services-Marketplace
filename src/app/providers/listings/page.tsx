@@ -80,7 +80,7 @@ export default function MyListingsPage() {
       <div style={{ display: "grid", gap: 12 }}>
         {listings.length === 0 ? (
           <div className="card">
-            <p className="muted">You haven't created any listings yet.</p>
+            <p className="muted">You haven&apos;t created any listings yet.</p>
             <Link className="button primary" href="/providers/listings/new" style={{ marginTop: 12, display: "inline-flex" }}>
               Create your first listing
             </Link>

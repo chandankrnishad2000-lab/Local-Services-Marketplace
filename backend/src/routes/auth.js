@@ -4,7 +4,7 @@ const fetch = require('node-fetch');
 const User = require('../models/User');
 const LocalProProfile = require('../models/LocalProProfile');
 const OtpCode = require('../models/OtpCode');
-const { requireAuth } = require('../middleware/auth');
+const { sendOtpEmail } = require('../services/email');
 const { getOAuthStatus, generateAppleClientSecret } = require('../helpers/oauth');
 const { now } = require('../helpers/now');
 
@@ -291,32 +291,53 @@ router.all('/oauth/apple/callback', async (req, res) => {
 // POST /api/auth/otp/request
 router.post('/otp/request', async (req, res) => {
   try {
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ error: 'Email required.' });
+    const email = String(req.body.email || '').trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'Enter a valid email address.' });
     }
 
-    const code = String(Math.floor(100000 + Math.random() * 900000));
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    const nowDate = new Date();
+    const resendAfterMs = 60 * 1000;
+    const recent = await OtpCode.findOne({ email }).sort({ createdAt: -1 }).lean();
+    if (recent && nowDate.getTime() - new Date(recent.createdAt).getTime() < resendAfterMs) {
+      return res.status(429).json({ error: 'Please wait one minute before requesting another code.' });
+    }
 
-    await OtpCode.create({
-      email: email.toLowerCase(),
-      code,
+    const windowStart = new Date(nowDate.getTime() - 15 * 60 * 1000).toISOString();
+    const requests = await OtpCode.countDocuments({ email, createdAt: { $gte: windowStart } });
+    if (requests >= 5) {
+      return res.status(429).json({ error: 'Too many code requests. Try again in 15 minutes.' });
+    }
+
+    const expiresInMinutes = Number(process.env.OTP_EXPIRY_MINUTES || 10);
+    const expiresAt = new Date(nowDate.getTime() + expiresInMinutes * 60 * 1000);
+    const code = String(require('crypto').randomInt(100000, 1000000));
+    const otpSecret = process.env.OTP_SECRET || process.env.SESSION_SECRET || 'dev-only-otp-secret';
+    const codeHash = require('crypto').createHmac('sha256', otpSecret).update(`${email}:${code}`).digest('hex');
+
+    const otp = await OtpCode.create({
+      email,
+      codeHash,
       expiresAt,
       verified: false,
       createdAt: now()
     });
 
-    const response = {
-      message: 'OTP sent (dummy).',
-      expiresAt: expiresAt.toISOString()
-    };
-
-    if (process.env.NODE_ENV !== 'production') {
-      response.code = code;
+    try {
+      await sendOtpEmail({ to: email, code, expiresInMinutes });
+    } catch (emailError) {
+      await OtpCode.deleteOne({ _id: otp._id });
+      console.error('OTP email error:', emailError.message);
+      const message = emailError.code === 'EMAIL_NOT_CONFIGURED'
+        ? 'Email sign-in is not configured yet. Please use password login or contact support.'
+        : 'We could not send a code right now. Please try again shortly.';
+      return res.status(503).json({ error: message });
     }
 
-    res.json(response);
+    res.json({
+      message: 'A sign-in code has been sent to your email.',
+      expiresAt: expiresAt.toISOString()
+    });
   } catch (err) {
     console.error('OTP request error:', err);
     res.status(500).json({ error: 'Server error.' });
@@ -326,14 +347,14 @@ router.post('/otp/request', async (req, res) => {
 // POST /api/auth/otp/verify
 router.post('/otp/verify', async (req, res) => {
   try {
-    const { email, code } = req.body;
-    if (!email || !code) {
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const code = String(req.body.code || '').trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !/^\d{6}$/.test(code)) {
       return res.status(400).json({ error: 'Invalid input.' });
     }
 
     const otp = await OtpCode.findOne({
-      email: email.toLowerCase(),
-      code,
+      email,
       verified: false
     }).sort({ createdAt: -1 });
 
@@ -343,6 +364,18 @@ router.post('/otp/verify', async (req, res) => {
 
     if (otp.expiresAt < new Date()) {
       return res.status(400).json({ error: 'OTP expired.' });
+    }
+
+    if (otp.attempts >= 5) {
+      return res.status(429).json({ error: 'Too many incorrect attempts. Request a new code.' });
+    }
+
+    const otpSecret = process.env.OTP_SECRET || process.env.SESSION_SECRET || 'dev-only-otp-secret';
+    const expectedHash = require('crypto').createHmac('sha256', otpSecret).update(`${email}:${code}`).digest('hex');
+    if (!otp.codeHash || !require('crypto').timingSafeEqual(Buffer.from(otp.codeHash), Buffer.from(expectedHash))) {
+      otp.attempts += 1;
+      await otp.save();
+      return res.status(400).json({ error: 'Invalid OTP.' });
     }
 
     otp.verified = true;

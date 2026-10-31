@@ -131,7 +131,7 @@ export default function HowItWorksSection() {
           flexDirection: 'column',
           gap: '0'
         }}>
-          {steps.map((step, idx) => (
+          {steps.map((step) => (
             <div
               key={step.number}
               style={{

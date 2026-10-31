@@ -30,7 +30,7 @@ export default function ProfilePage() {
         const data = await res.json();
         setUser(data.user);
         setLoading(false);
-      } catch (err) {
+      } catch {
         setError("Failed to load profile");
         setLoading(false);
       }
@@ -43,7 +43,7 @@ export default function ProfilePage() {
     try {
       await apiFetch("/api/auth/logout", { method: "POST" });
       router.push("/login");
-    } catch (err) {
+    } catch {
       setError("Failed to logout");
     }
   }

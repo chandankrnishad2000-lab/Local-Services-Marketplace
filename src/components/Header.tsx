@@ -292,7 +292,7 @@ export default function Header() {
             fontSize: '0.82rem',
             fontWeight: 600
           }}>
-            {languages.slice(0, 2).map((lang, idx) => (
+            {languages.slice(0, 2).map((lang) => (
               <button
                 key={lang.code}
                 type="button"

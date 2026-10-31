@@ -3,11 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "dev:all": "npm run --prefix backend start & next dev",
+    "dev": "npm run dev:all",
+    "dev:frontend": "next dev",
+    "dev:all": "npm run --prefix backend start & npm run dev:frontend",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint ."
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

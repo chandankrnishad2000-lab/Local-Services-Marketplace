@@ -41,7 +41,7 @@ export default function OTPLoginPage() {
       setExpiresAt(new Date(data.expiresAt));
       setStep("verify");
       setLoading(false);
-    } catch (err) {
+    } catch {
       setError(
         "OTP request failed: backend not reachable. Start the API with: `cd backend && npm start` (and open the site as http://localhost:3000)."
       );
@@ -71,7 +71,7 @@ export default function OTPLoginPage() {
       await refreshUser();
       setLoading(false);
       router.push("/listings");
-    } catch (err) {
+    } catch {
       setError(
         "OTP verify failed: backend not reachable. Start the API with: `cd backend && npm start` (and open the site as http://localhost:3000)."
       );
@@ -180,7 +180,7 @@ export default function OTPLoginPage() {
           </Link>
         </p>
         <p className="text-center text-sm text-gray-500 mt-4">
-          Don't have an account?
+          Don&apos;t have an account?
           <Link className="font-semibold text-blue-600 hover:text-blue-500 ml-2" href="/register">
             Sign up
           </Link>

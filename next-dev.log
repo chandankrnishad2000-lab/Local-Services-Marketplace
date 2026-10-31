@@ -1,0 +1,30 @@
+
+> local-services@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.5.12
+   - Local:        http://localhost:3000
+   - Network:      http://172.21.233.1:3000
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 2.9s
+ ✓ Compiled /middleware in 90ms (114 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 575ms (673 modules)
+ GET / 200 in 909ms
+ GET / 200 in 121ms
+ ✓ Compiled /interfaces in 189ms (681 modules)
+ GET /interfaces 200 in 253ms
+ ✓ Compiled /bookings in 114ms (695 modules)
+ GET /bookings 200 in 237ms
+ ✓ Compiled /support in 167ms (700 modules)
+ GET /support 200 in 221ms
+ GET /support 200 in 23ms
+ ✓ Compiled /services in 201ms (705 modules)
+ GET /services 200 in 318ms
+ ✓ Compiled /listings/[id] in 380ms (723 modules)
+ GET /listings/6a78ea7466b1771454ba6f00 200 in 934ms
+ GET /listings/6a78ea7466b1771454ba6f00 200 in 58ms
+ GET /services 200 in 149ms
+[?25h

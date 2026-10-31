@@ -4,63 +4,98 @@ import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { apiFetch, API_BASE } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import AuthShell from "@/components/auth/AuthShell";
+import { AuthInput, FormError, PasswordInput } from "@/components/auth/fields";
+import OAuthButtons from "@/components/auth/OAuthButtons";
+import {
+  readApiError,
+  redirectPathForRole,
+  type OAuthProviders
+} from "@/lib/auth-client";
+
+type Role = "CUSTOMER" | "LOCAL_PRO";
 
 export default function RegisterPage() {
   const router = useRouter();
   const { refreshUser } = useAuth();
   const [error, setError] = useState<string | null>(null);
-  const [socialNotice, setSocialNotice] = useState<string | null>(null);
-  const [selectedRole, setSelectedRole] = useState("CUSTOMER");
-  const [oauthStatus, setOauthStatus] = useState<{ google: boolean; apple: boolean } | null>(null);
+  const [providers, setProviders] = useState<OAuthProviders | null>(null);
+  const [selectedRole, setSelectedRole] = useState<Role>("CUSTOMER");
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setLoading(true);
+    if (loading) return;
+
     setError(null);
-    setSocialNotice(null);
 
     const form = new FormData(event.currentTarget);
-    const payload = Object.fromEntries(form.entries());
-    
-    // Check if passwords match
-    if (payload.password !== payload.confirmPassword) {
-      setError("Passwords do not match.");
-      setLoading(false);
+    const name = String(form.get("name") ?? "").trim();
+    const email = String(form.get("email") ?? "").trim();
+    const password = String(form.get("password") ?? "");
+    const confirmPassword = String(form.get("confirmPassword") ?? "");
+    const role = form.get("role") === "LOCAL_PRO" ? "LOCAL_PRO" : "CUSTOMER";
+    const acceptedTerms = form.get("terms") === "on";
+
+    if (name.length < 2) {
+      setError("Enter your full name.");
       return;
     }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Enter a valid email address.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    if (!acceptedTerms) {
+      setError("Please accept the Terms of Service and Privacy Policy.");
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const res = await apiFetch("/api/auth/register", {
         method: "POST",
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ name, email, password, role })
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        setError(data.error ?? "Registration failed.");
-        setLoading(false);
+        setError(await readApiError(res, "Registration failed. Please try again."));
         return;
       }
 
+      const data = await res.json().catch(() => ({}));
       await refreshUser();
-      setLoading(false);
-      router.push("/listings");
-    } catch (err) {
-      setError("Network error. Please try again.");
+      router.push(redirectPathForRole(data?.role ?? role));
+      router.refresh();
+    } catch {
+      setError("Unable to connect to the server. Please check your connection and try again.");
+    } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
     let active = true;
+
     apiFetch("/api/auth/oauth/status")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!active || !data?.providers) return;
-        setOauthStatus(data.providers);
+        setProviders(data.providers);
       })
       .catch(() => null);
 
@@ -70,174 +105,205 @@ export default function RegisterPage() {
   }, []);
 
   return (
-    <div className="relative flex h-auto min-h-[calc(100vh-140px)] w-full flex-col overflow-x-hidden p-6 max-w-md mx-auto">
-      {/* Top Navigation */}
-      <div className="flex items-center pb-6 justify-between mt-6">
-        <button onClick={() => router.back()} className="text-slate-900 flex size-12 shrink-0 items-center justify-center rounded-full hover:bg-orange-50 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+    <AuthShell
+      eyebrow="Get started"
+      title="Create your account"
+      subtitle="Join to book trusted local pros or offer your own services."
+    >
+      <form
+        id="register-form"
+        onSubmit={onSubmit}
+        noValidate
+        style={{ display: "grid", gap: "18px" }}
+      >
+        <AuthInput
+          id="name"
+          name="name"
+          label="Full Name"
+          type="text"
+          placeholder="John Doe"
+          autoComplete="name"
+          required
+          icon={
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+              <path
+                clipRule="evenodd"
+                d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                fillRule="evenodd"
+              />
+            </svg>
+          }
+        />
+
+        <AuthInput
+          id="email"
+          name="email"
+          label="Email Address"
+          type="email"
+          placeholder="name@example.com"
+          autoComplete="email"
+          autoCapitalize="none"
+          spellCheck={false}
+          required
+          icon={
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+              <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+            </svg>
+          }
+        />
+
+        <PasswordInput
+          id="password"
+          name="password"
+          label="Password"
+          placeholder="At least 8 characters"
+          autoComplete="new-password"
+          minLength={8}
+          required
+          icon={
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+              <path
+                clipRule="evenodd"
+                d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                fillRule="evenodd"
+              />
+            </svg>
+          }
+        />
+
+        <PasswordInput
+          id="confirmPassword"
+          name="confirmPassword"
+          label="Confirm Password"
+          placeholder="Repeat your password"
+          autoComplete="new-password"
+          minLength={8}
+          required
+          icon={
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+              <path
+                clipRule="evenodd"
+                d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                fillRule="evenodd"
+              />
+            </svg>
+          }
+        />
+
+        <div style={{ display: "grid", gap: "8px" }}>
+          <label
+            htmlFor="role"
+            style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--color-heading)" }}
+          >
+            I am signing up as
+          </label>
+          <div style={{ position: "relative" }}>
+            <select
+              id="role"
+              name="role"
+              value={selectedRole}
+              onChange={(event) => setSelectedRole(event.target.value as Role)}
+              style={{
+                width: "100%",
+                padding: "14px 40px 14px 16px",
+                borderRadius: "var(--radius-sm)",
+                border: "1.5px solid var(--color-border)",
+                fontSize: "0.95rem",
+                background: "#fff",
+                color: "var(--color-heading)",
+                appearance: "none",
+                cursor: "pointer",
+                outline: "none"
+              }}
+            >
+              <option value="CUSTOMER">Customer — I want to book services</option>
+              <option value="LOCAL_PRO">Local Pro — I want to offer services</option>
+            </select>
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                right: "16px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                pointerEvents: "none",
+                color: "var(--color-muted)"
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </span>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+          <input
+            id="terms"
+            name="terms"
+            type="checkbox"
+            style={{
+              width: "16px",
+              height: "16px",
+              marginTop: "3px",
+              accentColor: "var(--color-primary-dark)",
+              cursor: "pointer",
+              flexShrink: 0
+            }}
+          />
+          <label
+            htmlFor="terms"
+            style={{ fontSize: "0.84rem", color: "var(--color-body)", lineHeight: 1.5 }}
+          >
+            I agree to the{" "}
+            <Link href="/terms" style={{ fontWeight: 600, color: "var(--color-primary-dark)" }}>
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" style={{ fontWeight: 600, color: "var(--color-primary-dark)" }}>
+              Privacy Policy
+            </Link>
+            .
+          </label>
+        </div>
+
+        <FormError message={error} />
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="button primary"
+          style={{
+            width: "100%",
+            padding: "16px",
+            fontSize: "1rem",
+            borderRadius: "var(--radius-sm)",
+            opacity: loading ? 0.7 : 1,
+            cursor: loading ? "not-allowed" : "pointer"
+          }}
+        >
+          {loading ? "Creating Account..." : "Create Account"}
         </button>
-        <h2 className="text-slate-900 text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12">Create Account</h2>
+      </form>
+
+      <OAuthButtons providers={providers} role={selectedRole} disabled={loading} />
+
+      <div
+        style={{
+          marginTop: "28px",
+          paddingTop: "24px",
+          borderTop: "1px solid var(--color-border)",
+          textAlign: "center"
+        }}
+      >
+        <p style={{ fontSize: "0.9rem", color: "var(--color-body)" }}>
+          Already have an account?{" "}
+          <Link href="/login" style={{ fontWeight: 600, color: "var(--color-primary-dark)" }}>
+            Log In
+          </Link>
+        </p>
       </div>
-
-      <div className="w-full bg-center bg-no-repeat bg-cover flex flex-col justify-end overflow-hidden rounded-xl min-h-[180px] bg-orange-100/50 mb-6" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80")' }}>
-      </div>
-
-      <div className="flex flex-col pb-8">
-        <h1 className="text-slate-900 tracking-tight text-[32px] font-bold leading-tight text-center pb-2">Join Our Community</h1>
-        <p className="text-slate-600 text-center text-sm mb-6">Enter your details to get started with your new account</p>
-
-        {/* Form Container */}
-        <form className="flex flex-col gap-4 w-full" onSubmit={onSubmit}>
-          {/* Full Name Field */}
-          <div className="flex flex-col w-full">
-            <p className="text-slate-900 text-sm font-medium leading-normal pb-2">Full Name</p>
-            <div className="relative">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              <input className="form-input flex w-full rounded-xl text-slate-900 focus:outline-0 focus:ring-2 focus:ring-[#ec5b13] border border-slate-200 bg-white h-14 placeholder:text-slate-400 pl-12 pr-4 text-base font-normal leading-normal" placeholder="John Doe" type="text" name="name" required />
-            </div>
-          </div>
-
-          {/* Email Address Field */}
-          <div className="flex flex-col w-full">
-            <p className="text-slate-900 text-sm font-medium leading-normal pb-2">Email Address</p>
-            <div className="relative">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-              <input className="form-input flex w-full rounded-xl text-slate-900 focus:outline-0 focus:ring-2 focus:ring-[#ec5b13] border border-slate-200 bg-white h-14 placeholder:text-slate-400 pl-12 pr-4 text-base font-normal leading-normal" placeholder="example@mail.com" type="email" name="email" required />
-            </div>
-          </div>
-
-          {/* Password Field */}
-          <div className="flex flex-col w-full">
-            <p className="text-slate-900 text-sm font-medium leading-normal pb-2">Password</p>
-            <div className="relative">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <input className="form-input flex w-full rounded-xl text-slate-900 focus:outline-0 focus:ring-2 focus:ring-[#ec5b13] border border-slate-200 bg-white h-14 placeholder:text-slate-400 pl-12 pr-12 text-base font-normal leading-normal" placeholder="Create a password" type="password" name="password" required minLength={8} />
-            </div>
-          </div>
-
-          {/* Confirm Password Field */}
-          <div className="flex flex-col w-full">
-            <p className="text-slate-900 text-sm font-medium leading-normal pb-2">Confirm Password</p>
-            <div className="relative">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <input className="form-input flex w-full rounded-xl text-slate-900 focus:outline-0 focus:ring-2 focus:ring-[#ec5b13] border border-slate-200 bg-white h-14 placeholder:text-slate-400 pl-12 pr-4 text-base font-normal leading-normal" placeholder="Repeat password" type="password" name="confirmPassword" required minLength={8} />
-            </div>
-          </div>
-          
-          {/* Role Field */}
-          <div className="flex flex-col w-full">
-            <p className="text-slate-900 text-sm font-medium leading-normal pb-2">I am signing up as a...</p>
-            <div className="relative">
-              <select
-                name="role"
-                defaultValue="CUSTOMER"
-                onChange={(event) => setSelectedRole(event.target.value)}
-                className="form-select flex w-full rounded-xl text-slate-900 focus:outline-0 focus:ring-2 focus:ring-[#ec5b13] border border-slate-200 bg-white h-14 pl-4 pr-10 text-base font-normal leading-normal appearance-none cursor-pointer"
-              >
-                <option value="CUSTOMER">Customer (Looking to book services)</option>
-                <option value="LOCAL_PRO">Local Pro (Looking to offer services)</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-              </div>
-            </div>
-          </div>
-
-          {/* Error Message */}
-          {error && <p className="text-red-600 text-sm font-medium text-center">{error}</p>}
-          {socialNotice && <p className="text-slate-600 text-sm font-medium text-center">{socialNotice}</p>}
-          {oauthStatus && (!oauthStatus.google || !oauthStatus.apple) && (
-            <p className="text-slate-500 text-sm font-medium text-center">
-              OAuth setup pending for {oauthStatus.google ? "Apple" : oauthStatus.apple ? "Google" : "Google & Apple"}.
-            </p>
-          )}
-
-          {/* Terms and Conditions */}
-          <div className="flex items-center gap-2 mt-2">
-            <input className="rounded border-slate-300 text-[#ec5b13] focus:ring-[#ec5b13] h-4 w-4 bg-white" id="terms" type="checkbox" required />
-            <label className="text-sm text-slate-600 leading-tight" htmlFor="terms">
-              I agree to the <Link className="text-[#ec5b13] font-semibold hover:underline" href="/terms">Terms of Service</Link> and <Link className="text-[#ec5b13] font-semibold hover:underline" href="/privacy">Privacy Policy</Link>
-            </label>
-          </div>
-
-          {/* Sign Up Button */}
-          <button type="submit" disabled={loading} className="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl h-14 px-5 bg-[#ec5b13] text-white text-base font-bold leading-normal tracking-[0.015em] shadow-lg shadow-[#ec5b13]/20 hover:bg-[#ec5b13]/90 transition-all mt-4 disabled:opacity-70 disabled:cursor-not-allowed">
-            <span className="truncate">{loading ? "Creating Account..." : "Create Account"}</span>
-          </button>
-        </form>
-
-        {/* Divider */}
-        <div className="flex items-center gap-4 my-6">
-          <div className="h-[1px] flex-1 bg-slate-200"></div>
-          <p className="text-slate-500 text-sm font-medium">Or sign up with</p>
-          <div className="h-[1px] flex-1 bg-slate-200"></div>
-        </div>
-
-        {/* Social Sign-up Buttons */}
-        <div className="grid grid-cols-2 gap-4">
-          <button
-            type="button"
-            className="flex items-center justify-center gap-2 h-14 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 transition-colors shadow-sm"
-            onClick={() => {
-              setSocialNotice(null);
-              window.location.href = `${API_BASE}/api/auth/oauth/google/start?role=${encodeURIComponent(selectedRole)}`;
-            }}
-          >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"></path>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path>
-            </svg>
-            <span className="text-slate-700 font-semibold text-sm">Google</span>
-          </button>
-          <button
-            type="button"
-            className="flex items-center justify-center gap-2 h-14 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 transition-colors shadow-sm"
-            onClick={() => {
-              setSocialNotice(null);
-              window.location.href = `${API_BASE}/api/auth/oauth/apple/start?role=${encodeURIComponent(selectedRole)}`;
-            }}
-          >
-            <svg className="h-5 w-5" viewBox="0 0 384 512" xmlns="http://www.w3.org/2000/svg">
-              <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"></path>
-            </svg>
-            <span className="text-slate-700 font-semibold text-sm">Apple</span>
-          </button>
-          <button
-            type="button"
-            className="flex items-center justify-center gap-2 h-14 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 transition-colors shadow-sm"
-            onClick={() => setSocialNotice("Facebook sign-up will be added later. Use Google or Apple for now.")}
-          >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22.675 0h-21.35C.595 0 0 .594 0 1.326v21.348C0 23.406.595 24 1.325 24h11.49v-9.294H9.692V11.01h3.123V8.309c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24h-1.918c-1.504 0-1.795.715-1.795 1.763v2.31h3.587l-.467 3.696h-3.12V24h6.116C23.406 24 24 23.406 24 22.674V1.326C24 .594 23.406 0 22.675 0z" fill="#1877F2"></path>
-            </svg>
-            <span className="text-slate-700 font-semibold text-sm">Facebook</span>
-          </button>
-          <button
-            type="button"
-            className="flex items-center justify-center gap-2 h-14 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 transition-colors shadow-sm"
-            onClick={() => setSocialNotice("Phone sign-up will be added later. Use email OTP for now.")}
-          >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.07 21 3 13.93 3 5a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.46.57 3.58a1 1 0 0 1-.24 1.01l-2.21 2.2z" fill="#0F766E"></path>
-            </svg>
-            <span className="text-slate-700 font-semibold text-sm">Phone</span>
-          </button>
-        </div>
-
-        {/* Login Link */}
-        <div className="mt-8 text-center pb-8 border-t border-slate-200 pt-6">
-          <p className="text-slate-600">
-            Prefer OTP?
-            <Link className="text-[#ec5b13] font-bold hover:underline ml-2" href="/otp-login">Login with OTP</Link>
-          </p>
-          <p className="text-slate-600 mt-2">
-            Already have an account?
-            <Link className="text-[#ec5b13] font-bold hover:underline ml-2" href="/login">Log In</Link>
-          </p>
-        </div>
-      </div>
-    </div>
+    </AuthShell>
   );
 }

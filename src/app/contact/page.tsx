@@ -10,7 +10,7 @@ export default function ContactPage() {
             <div className="card border-0 shadow-sm">
               <div className="card-body p-4">
                 <h1 className="h3 fw-bold mb-4">Get in Touch</h1>
-                <p className="text-muted mb-4">Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.</p>
+                <p className="text-muted mb-4">Have questions? We&apos;d love to hear from you. Send us a message and we&apos;ll respond as soon as possible.</p>
                 
                 <form>
                   <div className="mb-3">

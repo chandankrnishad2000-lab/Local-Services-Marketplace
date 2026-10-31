@@ -1,5 +1,3 @@
-const fetch = require('node-fetch');
-
 function getOAuthStatus() {
   const googleConfigured = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
   let appleConfigured = false;

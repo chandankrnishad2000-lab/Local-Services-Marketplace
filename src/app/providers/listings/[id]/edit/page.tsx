@@ -93,7 +93,7 @@ export default function EditListingPage() {
     return (
       <div className="container section">
         <h2>Listing not found</h2>
-        <p className="muted">This listing does not exist or you don't have access to it.</p>
+        <p className="muted">This listing does not exist or you don&apos;t have access to it.</p>
         <Link className="button primary" href="/providers/listings">Back to my listings</Link>
       </div>
     );

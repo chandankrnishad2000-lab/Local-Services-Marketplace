@@ -41,7 +41,7 @@ export function Protected({ children, requiredRole, fallback }: ProtectedProps) 
     return fallback || (
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold mb-4">Insufficient Permissions</h2>
-        <p className="text-gray-600 mb-6">You don't have permission to access this page.</p>
+        <p className="text-gray-600 mb-6">You don&apos;t have permission to access this page.</p>
         <Link href="/" className="btn btn-primary">
           Go Home
         </Link>

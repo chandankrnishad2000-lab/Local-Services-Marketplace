@@ -8,105 +8,7 @@ import CTASection from "@/components/CTASection";
 import EnhancedFooter from "@/components/EnhancedFooter";
 import ServicesSection from "@/components/ServicesSection";
 import CitiesSection from "@/components/CitiesSection";
-
-const sampleListings = [
-  {
-    id: "demo-1",
-    title: "Premium Home Cleaning",
-    category: "Home Care",
-    location: "Mumbai, MH",
-    durationMinutes: 180,
-    priceCents: 49999,
-    currency: "inr",
-    providerName: "Sparkle Co.",
-    rating: 4.9,
-    reviewCount: 118
-  },
-  {
-    id: "demo-2",
-    title: "Private Math Tutoring",
-    category: "Education",
-    location: "Bangalore, KA",
-    durationMinutes: 60,
-    priceCents: 39999,
-    currency: "inr",
-    providerName: "Elevate Tutors",
-    rating: 4.8,
-    reviewCount: 76
-  },
-  {
-    id: "demo-3",
-    title: "Mobile Auto Detailing",
-    category: "Auto",
-    location: "Delhi, DL",
-    durationMinutes: 120,
-    priceCents: 75000,
-    currency: "inr",
-    providerName: "SeaBreeze Auto",
-    rating: 4.7,
-    reviewCount: 52
-  },
-  {
-    id: "demo-4",
-    title: "Professional Hair Styling",
-    category: "Wellness",
-    location: "Pune, MH",
-    durationMinutes: 90,
-    priceCents: 29999,
-    currency: "inr",
-    providerName: "Salon Bliss",
-    rating: 4.9,
-    reviewCount: 203
-  },
-  {
-    id: "demo-5",
-    title: "Yoga & Fitness Training",
-    category: "Wellness",
-    location: "Bangalore, KA",
-    durationMinutes: 60,
-    priceCents: 24999,
-    currency: "inr",
-    providerName: "FitLife Academy",
-    rating: 4.8,
-    reviewCount: 145
-  },
-  {
-    id: "demo-6",
-    title: "Web Development & Design",
-    category: "Tech",
-    location: "Hyderabad, TG",
-    durationMinutes: 240,
-    priceCents: 150000,
-    currency: "inr",
-    providerName: "CodeCraft Studio",
-    rating: 4.9,
-    reviewCount: 89
-  },
-  {
-    id: "demo-7",
-    title: "Event Planning & Coordination",
-    category: "Events",
-    location: "Chennai, TN",
-    durationMinutes: 480,
-    priceCents: 200000,
-    currency: "inr",
-    providerName: "Elite Events Co.",
-    rating: 4.7,
-    reviewCount: 67
-  },
-  {
-    id: "demo-8",
-    title: "AC Installation & Repair",
-    category: "Home Care",
-    location: "Kolkata, WB",
-    durationMinutes: 120,
-    priceCents: 59999,
-    currency: "inr",
-    providerName: "Cool Comfort Services",
-    rating: 4.6,
-    reviewCount: 98
-  }
-];
+import { fetchListingCards, getFallbackListings } from "@/lib/listings";
 
 const faqItems = [
   {
@@ -131,7 +33,17 @@ const faqItems = [
   }
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const listings = await fetchListingCards("/api/listings?limit=24");
+  const trending = [...listings]
+    .sort(
+      (a, b) =>
+        (b.reviewCount ?? 0) - (a.reviewCount ?? 0) ||
+        (b.rating ?? 0) - (a.rating ?? 0)
+    )
+    .slice(0, 8);
+  const displayListings = trending.length > 0 ? trending : getFallbackListings("/listings");
+
   return (
     <div>
       <HeroSection />
@@ -305,7 +217,7 @@ export default function HomePage() {
             </Link>
           </div>
           <div className="listing-grid">
-            {sampleListings.map((listing) => (
+            {displayListings.map((listing) => (
               <ListingCard key={listing.id} {...listing} />
             ))}
           </div>

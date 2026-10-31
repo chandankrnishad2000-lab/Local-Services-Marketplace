@@ -1,5 +1,3 @@
-const cors = require('cors');
-
 function corsMiddleware(req, res, next) {
   const origin = req.headers.origin;
   const envAllowed = process.env.FRONTEND_ORIGIN || '';

@@ -4,7 +4,7 @@ const ServiceListing = require('../models/ServiceListing');
 const User = require('../models/User');
 const LocalProProfile = require('../models/LocalProProfile');
 const Review = require('../models/Review');
-const { requireAuth, requireRole } = require('../middleware/auth');
+const { requireRole } = require('../middleware/auth');
 const { now } = require('../helpers/now');
 
 const router = express.Router();
@@ -275,6 +275,16 @@ router.get('/:id', async (req, res) => {
     const row = await ServiceListing.findById(id).lean();
     if (!row) {
       return res.status(404).json({ error: 'Not found.' });
+    }
+
+    if (row.status !== 'ACTIVE') {
+      const sessionUserId = req.session && req.session.userId;
+      const viewer = sessionUserId ? await User.findById(sessionUserId).lean() : null;
+      const isOwner = viewer && row.localProId.toString() === viewer._id.toString();
+      const isAdmin = viewer && viewer.role === 'ADMIN';
+      if (!isOwner && !isAdmin) {
+        return res.status(404).json({ error: 'Not found.' });
+      }
     }
 
     const [user, profile, reviewStats] = await Promise.all([

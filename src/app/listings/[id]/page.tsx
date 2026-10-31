@@ -11,22 +11,34 @@ type Review = {
   created_at: string;
 };
 
+function formatDate(value?: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString();
+}
+
+function renderStars(value: number) {
+  const rating = Math.max(0, Math.min(5, Math.round(Number(value) || 0)));
+  return `${"★".repeat(rating)}${"☆".repeat(5 - rating)}`;
+}
+
 export default async function ListingDetailPage({
   params
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!/^[a-f\d]{24}$/i.test(id)) return notFound();
+
   const res = await apiFetchServer(`/api/listings/${id}`);
-  if (!res.ok) return notFound();
-  const data = await res.json();
-  const listing = data.listing;
+  const data = res.ok ? await res.json().catch(() => null) : null;
+  const listing = data?.listing;
   if (!listing) return notFound();
   const rating = listing.rating ?? null;
 
   const reviewsRes = await apiFetchServer(`/api/reviews?listingId=${encodeURIComponent(id)}`);
-  const reviewsData = reviewsRes.ok ? await reviewsRes.json() : { reviews: [] };
-  const reviews: Review[] = reviewsData.reviews ?? [];
+  const reviewsData = reviewsRes.ok ? await reviewsRes.json().catch(() => null) : null;
+  const reviews: Review[] = Array.isArray(reviewsData?.reviews) ? reviewsData.reviews : [];
 
   return (
     <div style={{ padding: '80px 0' }}>
@@ -299,7 +311,7 @@ export default async function ListingDetailPage({
                       fontSize: '0.9rem',
                       letterSpacing: '2px'
                     }}>
-                      {"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}
+                      {renderStars(review.rating)}
                     </span>
                   </div>
                   {review.comment ? (
@@ -308,7 +320,7 @@ export default async function ListingDetailPage({
                     </p>
                   ) : null}
                   <p style={{ color: 'var(--color-muted)', fontSize: '0.8rem' }}>
-                    {new Date(review.created_at).toLocaleDateString()}
+                    {formatDate(review.created_at)}
                   </p>
                 </div>
               ))}

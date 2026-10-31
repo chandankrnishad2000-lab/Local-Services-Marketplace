@@ -37,6 +37,22 @@ APP_BASE_URL=http://localhost:3000
 BACKEND_BASE_URL=http://localhost:8000
 ```
 
+### Email OTP
+
+Email OTP uses your SMTP provider. Set these environment variables before enabling it:
+
+```
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=your-smtp-username
+SMTP_PASS=your-smtp-password
+SMTP_SECURE=false
+EMAIL_FROM="LocalPulse <no-reply@example.com>"
+OTP_SECRET=a-long-random-secret
+```
+
+Codes are six digits, expire after 10 minutes by default, and are sent only by email; they are never returned by the API or stored in plaintext. Set `OTP_EXPIRY_MINUTES` to change the expiry.
+
 Set `NODE_ENV=production` in deployed environments so session cookies are
 issued with `SameSite=None; Secure` (required for cross-domain fetch).
 
@@ -46,7 +62,7 @@ issued with `SameSite=None; Secure` (required for cross-domain fetch).
 - `POST /api/auth/login` - login
 - `POST /api/auth/logout` - logout
 - `GET /api/auth/me` - current user
-- `POST /api/auth/otp/request` / `POST /api/auth/otp/verify` - OTP login (code returned in dev)
+- `POST /api/auth/otp/request` / `POST /api/auth/otp/verify` - email OTP login
 - `GET|POST /api/listings` - list / create listings
 - `GET /api/listings/:id` - listing detail
 - `PUT|PATCH|DELETE /api/listings/:id` - owner update/delete
@@ -62,4 +78,4 @@ issued with `SameSite=None; Secure` (required for cross-domain fetch).
 - Sessions are stored in MongoDB via `connect-mongo`.
 - Fetch from the frontend must use `credentials: "include"`.
 - All Stripe endpoints are **dummy**.
-- OTP endpoint returns the OTP code in the response for testing.
+- Email OTP requires the SMTP settings above.

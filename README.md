@@ -6,7 +6,7 @@ Full-stack marketplace where customers book local services and providers manage 
 - Role-based auth (customer, provider, admin)
 - Listings, search, and booking flow
 - Listing moderation: new listings start `PENDING` and are approved by an admin
-- OTP login (dummy, returns code in dev)
+- Secure email OTP login (SMTP configurable)
 - Google/Apple OAuth (configurable)
 - Real Stripe Checkout when `STRIPE_SECRET_KEY` is set (dummy fallback otherwise)
 - Stripe Connect onboarding for provider payouts
@@ -32,7 +32,9 @@ Full-stack marketplace where customers book local services and providers manage 
 3. Frontend:
    - `cp .env.example .env`
    - `npm install`
-   - `npm run dev` (serves http://localhost:3000)
+   - `npm run dev` (starts both the frontend at http://localhost:3000 and the API at http://localhost:8000)
+
+`npm run dev:frontend` starts only the Next.js site. Authentication, registration, bookings, and OTP require the API, so use `npm run dev` for normal local development.
 
 Admin user (created by seed):
 - Email: admin@localservices.test
@@ -67,6 +69,7 @@ This project deploys as two Railway services from the same repo. Each service us
    - `APP_BASE_URL=https://<your-frontend-domain>`
    - `BACKEND_BASE_URL=https://<your-backend-domain>`
    - `NODE_ENV=production` (sets `SameSite=None; Secure` cookies)
+   - For email OTP: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`, and `OTP_SECRET`
    - Optional: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (leave empty to keep dummy checkout)
 
 ### 2) Frontend service (Next.js)
@@ -83,5 +86,5 @@ After deploy, update both services with the final Railway URLs.
 
 ## Notes
 - Stripe checkout, Connect, and webhooks are fully implemented. Without `STRIPE_SECRET_KEY` the API falls back to a dummy checkout that marks payments as PAID instantly.
-- OTP responses include the code for local testing.
+- Email OTP requires the SMTP settings in `backend/.env.example`; codes are not exposed by the API.
 - New listings are created as `PENDING` and only appear publicly after an admin approves them.
