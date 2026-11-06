@@ -6,7 +6,7 @@ const otpCodeSchema = new mongoose.Schema({
   expiresAt: { type: Date, required: true },
   verified: { type: Boolean, default: false },
   attempts: { type: Number, default: 0 },
-  createdAt: { type: String, required: true }
+  createdAt: { type: Date, required: true, default: Date.now }
 }, { timestamps: false, versionKey: false });
 
 otpCodeSchema.index({ email: 1, createdAt: -1 });

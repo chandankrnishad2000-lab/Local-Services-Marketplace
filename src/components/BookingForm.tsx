@@ -3,6 +3,7 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
 import Button from "@/components/Button";
+import PaymentMethodSelect, { type PaymentMethod } from "@/components/PaymentMethodSelect";
 import { formatMoney } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +21,7 @@ export default function BookingForm({
 }) {
   const [status, setStatus] = useState<string | null>(null);
   const [tipCents, setTipCents] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
   const { user, isAuthenticated } = useAuth();
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -52,7 +54,7 @@ export default function BookingForm({
 
     const checkout = await apiFetch("/api/stripe/checkout", {
       method: "POST",
-      body: JSON.stringify({ bookingId: data.bookingId })
+      body: JSON.stringify({ bookingId: data.bookingId, paymentMethod })
     });
 
     const checkoutData = await checkout.json();
@@ -93,6 +95,7 @@ export default function BookingForm({
           ))}
         </select>
       </label>
+      <PaymentMethodSelect value={paymentMethod} onChange={setPaymentMethod} />
       <div className="card" style={{ background: "#f9fbfd" }}>
         <p className="muted">Estimated total</p>
         <h3>{formatMoney(priceCents + tipCents, currency)}</h3>

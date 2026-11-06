@@ -17,12 +17,28 @@ if (SECRET_KEY) {
 
 const isDummy = () => !stripe;
 
+const PAYMENT_METHODS = ['card', 'upi', 'netbanking'];
+const PAYMENT_METHOD_LABELS = {
+  card: 'Card',
+  upi: 'UPI',
+  netbanking: 'Netbanking'
+};
+const DEFAULT_PAYMENT_METHOD = 'card';
+
 // POST /api/stripe/checkout - Create a Stripe Checkout Session (or dummy fallback)
 router.post('/checkout', requireRole('CUSTOMER'), async (req, res) => {
   try {
     const { bookingId } = req.body;
     if (!bookingId) {
       return res.status(400).json({ error: 'Missing bookingId.' });
+    }
+
+    const requestedMethod = req.body.paymentMethod ?? req.body.method ?? DEFAULT_PAYMENT_METHOD;
+    const method = typeof requestedMethod === 'string' ? requestedMethod.trim().toLowerCase() : '';
+    if (!PAYMENT_METHODS.includes(method)) {
+      return res.status(400).json({
+        error: `Unsupported payment method. Choose one of: ${PAYMENT_METHODS.join(', ')}.`
+      });
     }
 
     if (!mongoose.Types.ObjectId.isValid(bookingId)) {
@@ -43,14 +59,25 @@ router.post('/checkout', requireRole('CUSTOMER'), async (req, res) => {
     }
 
     if (isDummy()) {
-      await Payment.findByIdAndUpdate(payment._id, { status: 'PAID' });
-      return res.json({ url: null, message: 'Dummy checkout complete' });
+      await Payment.findByIdAndUpdate(payment._id, { status: 'PAID', method });
+      return res.json({
+        url: null,
+        message: `Dummy checkout complete via ${PAYMENT_METHOD_LABELS[method]}`,
+        method,
+        paymentMethod: method
+      });
     }
 
     const currency = booking.currency || 'inr';
+    if (method !== 'card' && String(currency).toLowerCase() !== 'inr') {
+      return res.status(400).json({
+        error: `${PAYMENT_METHOD_LABELS[method]} is only available for INR payments.`
+      });
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
-      payment_method_types: ['card'],
+      payment_method_types: [method],
       line_items: [
         {
           price_data: {
@@ -61,15 +88,16 @@ router.post('/checkout', requireRole('CUSTOMER'), async (req, res) => {
           quantity: 1
         }
       ],
-      metadata: { bookingId: booking._id.toString() },
+      metadata: { bookingId: booking._id.toString(), paymentMethod: method },
       success_url: `${FRONTEND_ORIGIN}/bookings/${booking._id.toString()}?payment=success`,
       cancel_url: `${FRONTEND_ORIGIN}/bookings/${booking._id.toString()}?payment=cancelled`
     });
 
+    payment.method = method;
     payment.stripeCheckoutSessionId = session.id;
     await payment.save();
 
-    res.json({ url: session.url });
+    res.json({ url: session.url, method, paymentMethod: method });
   } catch (err) {
     console.error('Stripe checkout error:', err);
     res.status(500).json({ error: 'Server error.' });
@@ -149,7 +177,13 @@ router.post('/webhook', async (req, res) => {
         }
         await Payment.findOneAndUpdate(
           { bookingId },
-          { status: 'PAID', stripeCheckoutSessionId: session.id }
+          {
+            status: 'PAID',
+            stripeCheckoutSessionId: session.id,
+            ...(PAYMENT_METHODS.includes(session.metadata?.paymentMethod)
+              ? { method: session.metadata.paymentMethod }
+              : {})
+          }
         );
         break;
       }
@@ -158,7 +192,13 @@ router.post('/webhook', async (req, res) => {
         if (pi.metadata?.bookingId) {
           await Payment.findOneAndUpdate(
             { bookingId: pi.metadata.bookingId },
-            { status: 'PAID', stripePaymentIntentId: pi.id }
+            {
+              status: 'PAID',
+              stripePaymentIntentId: pi.id,
+              ...(PAYMENT_METHODS.includes(pi.metadata?.paymentMethod)
+                ? { method: pi.metadata.paymentMethod }
+                : {})
+            }
           );
         }
         break;

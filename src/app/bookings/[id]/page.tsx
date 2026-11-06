@@ -7,6 +7,7 @@ import type { FormEvent } from "react";
 import { apiFetch } from "@/lib/api";
 import { formatMoney } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import PaymentMethodSelect, { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/components/PaymentMethodSelect";
 
 type BookingDetail = {
   id: string;
@@ -23,6 +24,7 @@ type BookingDetail = {
   end_at?: string;
   created_at?: string;
   paymentStatus?: string | null;
+  paymentMethod?: PaymentMethod | null;
 };
 
 type Review = {
@@ -57,6 +59,7 @@ function BookingDetailInner({ id }: { id: string }) {
   const [myReview, setMyReview] = useState<Review | null>(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
 
   useEffect(() => {
     let active = true;
@@ -120,7 +123,7 @@ function BookingDetailInner({ id }: { id: string }) {
     try {
       const res = await apiFetch("/api/stripe/checkout", {
         method: "POST",
-        body: JSON.stringify({ bookingId: id })
+        body: JSON.stringify({ bookingId: id, paymentMethod })
       });
       const data = await res.json();
       if (data.url) {
@@ -128,8 +131,9 @@ function BookingDetailInner({ id }: { id: string }) {
         return;
       }
       if (res.ok) {
-        setMessage("Payment received.");
-        setBooking((prev) => (prev ? { ...prev, paymentStatus: "PAID" } : prev));
+        const paidWith = PAYMENT_METHOD_LABELS[(data.paymentMethod ?? paymentMethod) as PaymentMethod] ?? "selected method";
+        setMessage(`Payment received via ${paidWith}.`);
+        setBooking((prev) => (prev ? { ...prev, paymentStatus: "PAID", paymentMethod: data.paymentMethod ?? paymentMethod } : prev));
       } else {
         setError(data.error ?? "Checkout failed.");
       }
@@ -217,6 +221,9 @@ function BookingDetailInner({ id }: { id: string }) {
           <p className="muted">Tip: {formatMoney(booking.tip_cents, booking.listingCurrency)}</p>
           <p>Total: {formatMoney(booking.total_cents + booking.tip_cents, booking.listingCurrency)}</p>
           <p className="muted">Payment: {booking.paymentStatus ?? "Not started"}</p>
+          {booking.paymentMethod ? (
+            <p className="muted">Method: {PAYMENT_METHOD_LABELS[booking.paymentMethod] ?? booking.paymentMethod}</p>
+          ) : null}
           {booking.start_at ? <p className="muted">Starts: {new Date(booking.start_at).toLocaleString()}</p> : null}
           {booking.end_at ? <p className="muted">Ends: {new Date(booking.end_at).toLocaleString()}</p> : null}
           {booking.notes ? <p className="muted">Notes: {booking.notes}</p> : null}
@@ -229,11 +236,21 @@ function BookingDetailInner({ id }: { id: string }) {
           <p style={{ color: "#dc2626", marginTop: 16 }}>{error}</p>
         ) : null}
 
+        {showPay && (
+          <div style={{ marginTop: 20 }}>
+            <PaymentMethodSelect
+              value={paymentMethod}
+              onChange={setPaymentMethod}
+              disabled={actionLoading}
+            />
+          </div>
+        )}
+
         {(showCancel || showConfirm || showComplete || showPay) && (
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 24 }}>
             {showPay && (
               <button className="button primary" disabled={actionLoading} onClick={payNow}>
-                {actionLoading ? "Processing..." : `Pay now · ${formatMoney(booking.total_cents + booking.tip_cents, booking.listingCurrency)}`}
+                {actionLoading ? "Processing..." : `Pay with ${PAYMENT_METHOD_LABELS[paymentMethod]} · ${formatMoney(booking.total_cents + booking.tip_cents, booking.listingCurrency)}`}
               </button>
             )}
             {showConfirm && (

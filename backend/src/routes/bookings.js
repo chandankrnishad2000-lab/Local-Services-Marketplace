@@ -166,7 +166,8 @@ router.get('/:id', requireAuth, async (req, res) => {
         start_at: booking.startAt,
         end_at: booking.endAt,
         created_at: booking.createdAt,
-        paymentStatus: payment?.status || null
+        paymentStatus: payment?.status || null,
+        paymentMethod: payment?.method || null
       }
     });
   } catch (err) {

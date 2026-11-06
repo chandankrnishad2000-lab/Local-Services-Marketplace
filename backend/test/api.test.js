@@ -220,6 +220,54 @@ describe('Local Services API', () => {
       assert.equal(detail.body.booking.paymentStatus, 'PAID');
     });
 
+    it('accepts UPI and netbanking payment methods', async () => {
+      const methods = ['upi', 'netbanking'];
+      for (const method of methods) {
+        const { agent: pro } = await register('LOCAL_PRO');
+        const id = await createListing(pro);
+        const { agent: admin } = await createAdmin();
+        await admin.patch(`/api/listings/admin/${id}/status`).send({ status: 'ACTIVE' });
+        const { agent: customer } = await register('CUSTOMER');
+        const booking = await customer.post('/api/bookings').send({
+          listingId: id,
+          startAt: '2026-09-02T12:00:00',
+          endAt: '2026-09-02T13:00:00'
+        });
+        const bookingId = booking.body.bookingId;
+
+        const checkout = await customer.post('/api/stripe/checkout').send({ bookingId, paymentMethod: method });
+        assert.equal(checkout.status, 200);
+        assert.equal(checkout.body.url, null);
+        assert.equal(checkout.body.method, method);
+        assert.match(checkout.body.message, /dummy/i);
+
+        const detail = await customer.get(`/api/bookings/${bookingId}`);
+        assert.equal(detail.body.booking.paymentStatus, 'PAID');
+        assert.equal(detail.body.booking.paymentMethod, method);
+      }
+    });
+
+    it('rejects an unsupported payment method', async () => {
+      const { agent: pro } = await register('LOCAL_PRO');
+      const id = await createListing(pro);
+      const { agent: admin } = await createAdmin();
+      await admin.patch(`/api/listings/admin/${id}/status`).send({ status: 'ACTIVE' });
+      const { agent: customer } = await register('CUSTOMER');
+      const booking = await customer.post('/api/bookings').send({
+        listingId: id,
+        startAt: '2026-09-02T14:00:00',
+        endAt: '2026-09-02T15:00:00'
+      });
+      const bookingId = booking.body.bookingId;
+
+      const checkout = await customer.post('/api/stripe/checkout').send({ bookingId, paymentMethod: 'paypal' });
+      assert.equal(checkout.status, 400);
+      assert.match(checkout.body.error, /payment method/i);
+
+      const detail = await customer.get(`/api/bookings/${bookingId}`);
+      assert.equal(detail.body.booking.paymentStatus, 'REQUIRES_PAYMENT');
+    });
+
     it('customer can only cancel their own bookings', async () => {
       const { agent: pro } = await register('LOCAL_PRO');
       const id = await createListing(pro);
@@ -333,6 +381,70 @@ describe('Local Services API', () => {
 
       const again = await admin.patch(`/api/reports/${reportId}`).send({ action: 'DISMISSED' });
       assert.equal(again.status, 400);
+    });
+  });
+
+  describe('Contact messages', () => {
+    it('saves a public contact submission and lists it for admins', async () => {
+      const submitted = await request(app).post('/api/contact').send({
+        name: 'Asha Verma',
+        email: 'ASHA@example.com',
+        phone: '+91 9000000000',
+        subject: 'Booking help',
+        message: 'I need help rescheduling my booking.'
+      });
+      assert.equal(submitted.status, 200);
+      assert.equal(submitted.body.ok, true);
+
+      const { agent: admin } = await createAdmin();
+      const list = await admin.get('/api/contact');
+      assert.equal(list.status, 200);
+      const saved = list.body.messages.find((m) => m.id === submitted.body.id);
+      assert.ok(saved);
+      assert.equal(saved.email, 'asha@example.com');
+      assert.equal(saved.status, 'NEW');
+      assert.equal(saved.subject, 'Booking help');
+    });
+
+    it('rejects invalid contact submissions', async () => {
+      const missing = await request(app).post('/api/contact').send({ name: 'No Email' });
+      assert.equal(missing.status, 400);
+
+      const badEmail = await request(app).post('/api/contact').send({
+        name: 'Bad Email',
+        email: 'not-an-email',
+        subject: 'Hi',
+        message: 'Hello'
+      });
+      assert.equal(badEmail.status, 400);
+    });
+
+    it('blocks non-admins from reading contact messages', async () => {
+      const { agent } = await register('CUSTOMER');
+      const res = await agent.get('/api/contact');
+      assert.equal(res.status, 403);
+    });
+
+    it('lets admins update status and delete a message', async () => {
+      const submitted = await request(app).post('/api/contact').send({
+        name: 'Ravi Kumar',
+        email: 'ravi@example.com',
+        subject: 'Refund',
+        message: 'Please process my refund.'
+      });
+      const { agent: admin } = await createAdmin();
+
+      const read = await admin.patch(`/api/contact/${submitted.body.id}`).send({ status: 'READ' });
+      assert.equal(read.body.status, 'READ');
+
+      const resolved = await admin.patch(`/api/contact/${submitted.body.id}`).send({ status: 'RESOLVED' });
+      assert.equal(resolved.body.status, 'RESOLVED');
+
+      const deleted = await admin.delete(`/api/contact/${submitted.body.id}`);
+      assert.equal(deleted.body.ok, true);
+
+      const list = await admin.get('/api/contact');
+      assert.ok(!list.body.messages.some((m) => m.id === submitted.body.id));
     });
   });
 

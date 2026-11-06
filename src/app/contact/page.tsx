@@ -1,6 +1,80 @@
-import Link from 'next/link';
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
+
+type FormState = {
+  name: string;
+  email: string;
+  phone: string;
+  subject: string;
+  message: string;
+};
+
+const EMPTY_FORM: FormState = {
+  name: "",
+  email: "",
+  phone: "",
+  subject: "",
+  message: ""
+};
 
 export default function ContactPage() {
+  const { user } = useAuth();
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [sending, setSending] = useState(false);
+  const [notice, setNotice] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [prefilled, setPrefilled] = useState(false);
+
+  useEffect(() => {
+    if (user && !prefilled) {
+      setForm((current) => ({
+        ...current,
+        name: current.name || user.name,
+        email: current.email || user.email
+      }));
+      setPrefilled(true);
+    }
+  }, [user, prefilled]);
+
+  const update = (field: keyof FormState) => (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setForm((current) => ({ ...current, [field]: event.target.value }));
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setNotice(null);
+
+    if (!form.name.trim() || !form.email.trim() || !form.subject.trim() || !form.message.trim()) {
+      setNotice({ type: "error", text: "Please fill in your name, email, subject, and message." });
+      return;
+    }
+
+    setSending(true);
+    try {
+      const res = await apiFetch("/api/contact", {
+        method: "POST",
+        body: JSON.stringify(form)
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        setForm(EMPTY_FORM);
+        setNotice({ type: "success", text: "Thanks! Your message has been saved. Our team will get back to you soon." });
+      } else {
+        setNotice({ type: "error", text: data.error ?? "Could not send your message. Please try again." });
+      }
+    } catch {
+      setNotice({ type: "error", text: "Could not reach the server. Please try again." });
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
     <div>
       <div className="container py-5">
@@ -11,34 +85,84 @@ export default function ContactPage() {
               <div className="card-body p-4">
                 <h1 className="h3 fw-bold mb-4">Get in Touch</h1>
                 <p className="text-muted mb-4">Have questions? We&apos;d love to hear from you. Send us a message and we&apos;ll respond as soon as possible.</p>
-                
-                <form>
+
+                {notice ? (
+                  <div
+                    className={`alert ${notice.type === "success" ? "alert-success" : "alert-danger"}`}
+                    role="alert"
+                  >
+                    {notice.text}
+                  </div>
+                ) : null}
+
+                <form onSubmit={handleSubmit}>
                   <div className="mb-3">
                     <label htmlFor="name" className="form-label fw-semibold">Full Name</label>
-                    <input type="text" className="form-control form-control-lg" id="name" placeholder="Your name" />
+                    <input
+                      type="text"
+                      className="form-control form-control-lg"
+                      id="name"
+                      placeholder="Your name"
+                      value={form.name}
+                      onChange={update("name")}
+                      required
+                    />
                   </div>
 
                   <div className="mb-3">
                     <label htmlFor="email" className="form-label fw-semibold">Email Address</label>
-                    <input type="email" className="form-control form-control-lg" id="email" placeholder="your.email@example.com" />
+                    <input
+                      type="email"
+                      className="form-control form-control-lg"
+                      id="email"
+                      placeholder="your.email@example.com"
+                      value={form.email}
+                      onChange={update("email")}
+                      required
+                    />
                   </div>
 
                   <div className="mb-3">
                     <label htmlFor="phone" className="form-label fw-semibold">Phone Number</label>
-                    <input type="tel" className="form-control form-control-lg" id="phone" placeholder="+91 XXXXXXXXXX" />
+                    <input
+                      type="tel"
+                      className="form-control form-control-lg"
+                      id="phone"
+                      placeholder="+91 XXXXXXXXXX"
+                      value={form.phone}
+                      onChange={update("phone")}
+                    />
                   </div>
 
                   <div className="mb-3">
                     <label htmlFor="subject" className="form-label fw-semibold">Subject</label>
-                    <input type="text" className="form-control form-control-lg" id="subject" placeholder="How can we help?" />
+                    <input
+                      type="text"
+                      className="form-control form-control-lg"
+                      id="subject"
+                      placeholder="How can we help?"
+                      value={form.subject}
+                      onChange={update("subject")}
+                      required
+                    />
                   </div>
 
                   <div className="mb-4">
                     <label htmlFor="message" className="form-label fw-semibold">Message</label>
-                    <textarea className="form-control" id="message" rows={5} placeholder="Your message..."></textarea>
+                    <textarea
+                      className="form-control"
+                      id="message"
+                      rows={5}
+                      placeholder="Your message..."
+                      value={form.message}
+                      onChange={update("message")}
+                      required
+                    ></textarea>
                   </div>
 
-                  <button type="submit" className="btn btn-primary btn-lg w-100">Send Message</button>
+                  <button type="submit" className="btn btn-primary btn-lg w-100" disabled={sending}>
+                    {sending ? "Sending..." : "Send Message"}
+                  </button>
                 </form>
               </div>
             </div>

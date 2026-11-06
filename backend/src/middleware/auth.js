@@ -1,23 +1,27 @@
 const User = require('../models/User');
 
 async function requireAuth(req, res, next) {
-  if (!req.session || !req.session.userId) {
-    return res.status(401).json({ error: 'Unauthorized.' });
-  }
+  try {
+    if (!req.session || !req.session.userId) {
+      return res.status(401).json({ error: 'Unauthorized.' });
+    }
 
-  const user = await User.findById(req.session.userId).lean();
-  if (!user) {
-    return res.status(401).json({ error: 'Unauthorized.' });
-  }
+    const user = await User.findById(req.session.userId).lean();
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized.' });
+    }
 
-  req.user = {
-    id: user._id.toString(),
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    createdAt: user.createdAt
-  };
-  next();
+    req.user = {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt
+    };
+    next();
+  } catch (err) {
+    next(err);
+  }
 }
 
 function requireRole(roles) {

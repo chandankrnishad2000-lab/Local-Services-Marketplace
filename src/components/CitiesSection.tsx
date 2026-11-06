@@ -12,7 +12,9 @@ export default function CitiesSection() {
     { name: "Chennai", state: "Tamil Nadu", services: "980+", icon: "🌊" },
     { name: "Kolkata", state: "West Bengal", services: "750+", icon: "🌉" },
     { name: "Ahmedabad", state: "Gujarat", services: "890+", icon: "🏗️" },
-    { name: "Jaipur", state: "Rajasthan", services: "620+", icon: "🏰" }
+    { name: "Jaipur", state: "Rajasthan", services: "620+", icon: "🏰" },
+    { name: "Jalandhar", state: "Punjab", services: "430+", icon: "🏏" },
+    { name: "Amritsar", state: "Punjab", services: "520+", icon: "🛕" }
   ];
 
   return (

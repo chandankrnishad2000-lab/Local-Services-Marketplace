@@ -488,6 +488,76 @@ img {
   gap: 20px;
 }
 
+/* ── Payment Method Selector ── */
+.payment-options {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.payment-options legend {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-heading);
+  margin-bottom: 8px;
+}
+
+.payment-option-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.payment-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  cursor: pointer;
+  background: var(--color-bg);
+  transition: var(--transition);
+}
+
+.payment-option:hover {
+  border-color: var(--color-primary);
+}
+
+.payment-option.selected {
+  border-color: var(--color-primary);
+  background: rgba(126, 179, 227, 0.12);
+  box-shadow: 0 0 0 3px rgba(126, 179, 227, 0.15);
+}
+
+.payment-option input {
+  accent-color: var(--color-primary);
+  margin: 0;
+}
+
+.payment-option-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.payment-option-text {
+  display: grid;
+  gap: 2px;
+  font-size: 0.85rem;
+}
+
+.payment-option-text span {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.payment-options:disabled .payment-option {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* ── Filter Bar ── */
 .filter-bar {
   display: grid;

@@ -4,6 +4,7 @@ const User = require('../models/User');
 const ServiceListing = require('../models/ServiceListing');
 const Report = require('../models/Report');
 const Booking = require('../models/Booking');
+const ContactMessage = require('../models/ContactMessage');
 const LocalProProfile = require('../models/LocalProProfile');
 const { requireRole } = require('../middleware/auth');
 
@@ -21,7 +22,8 @@ router.get('/stats', async (req, res) => {
       pendingListings,
       activeListings,
       openReports,
-      totalBookings
+      totalBookings,
+      newContactMessages
     ] = await Promise.all([
       User.countDocuments(),
       User.countDocuments({ role: 'LOCAL_PRO' }),
@@ -29,7 +31,8 @@ router.get('/stats', async (req, res) => {
       ServiceListing.countDocuments({ status: 'PENDING' }),
       ServiceListing.countDocuments({ status: 'ACTIVE' }),
       Report.countDocuments({ status: 'OPEN' }),
-      Booking.countDocuments()
+      Booking.countDocuments(),
+      ContactMessage.countDocuments({ status: 'NEW' })
     ]);
 
     res.json({
@@ -40,7 +43,8 @@ router.get('/stats', async (req, res) => {
         pendingListings,
         activeListings,
         openReports,
-        totalBookings
+        totalBookings,
+        newContactMessages
       }
     });
   } catch (err) {

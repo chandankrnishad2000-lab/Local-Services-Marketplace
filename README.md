@@ -8,11 +8,12 @@ Full-stack marketplace where customers book local services and providers manage 
 - Listing moderation: new listings start `PENDING` and are approved by an admin
 - Secure email OTP login (SMTP configurable)
 - Google/Apple OAuth (configurable)
-- Real Stripe Checkout when `STRIPE_SECRET_KEY` is set (dummy fallback otherwise)
+- Real Stripe Checkout when `STRIPE_SECRET_KEY` is set (dummy fallback otherwise), with card, UPI, and netbanking payment options
 - Stripe Connect onboarding for provider payouts
 - Tips and platform fee support
 - Reviews, reports, and messaging
-- Admin moderation dashboard (approve/pause/reject listings, resolve reports, manage users)
+- Contact form submissions saved to MongoDB and readable from the admin dashboard
+- Admin moderation dashboard (approve/pause/reject listings, resolve reports, manage users, read contact messages)
 
 ## Tech Stack
 - Next.js (App Router, TypeScript)
@@ -85,6 +86,6 @@ Use the Railway MongoDB plugin or MongoDB Atlas, then point the backend's `MONGO
 After deploy, update both services with the final Railway URLs.
 
 ## Notes
-- Stripe checkout, Connect, and webhooks are fully implemented. Without `STRIPE_SECRET_KEY` the API falls back to a dummy checkout that marks payments as PAID instantly.
+- Stripe checkout, Connect, and webhooks are fully implemented. Customers can pay by card, UPI, or netbanking; UPI and netbanking require INR payments and must be enabled in your Stripe account. Without `STRIPE_SECRET_KEY` the API falls back to a dummy checkout that marks payments as PAID instantly.
 - Email OTP requires the SMTP settings in `backend/.env.example`; codes are not exposed by the API.
 - New listings are created as `PENDING` and only appear publicly after an admin approves them.

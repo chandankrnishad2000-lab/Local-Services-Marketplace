@@ -12,6 +12,7 @@ const stripeRoutes = require('./routes/stripe');
 const reviewsRoutes = require('./routes/reviews');
 const messagesRoutes = require('./routes/messages');
 const reportsRoutes = require('./routes/reports');
+const contactRoutes = require('./routes/contact');
 const adminRoutes = require('./routes/admin');
 
 const app = express();
@@ -19,6 +20,8 @@ const app = express();
 app.use(express.json({
   verify: (req, res, buf) => { req.rawBody = buf; }
 }));
+// Apple sends its OAuth callback as application/x-www-form-urlencoded.
+app.use(express.urlencoded({ extended: false }));
 
 app.use(corsMiddleware);
 
@@ -47,6 +50,7 @@ app.use('/api/stripe', stripeRoutes);
 app.use('/api/reviews', reviewsRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/contact', contactRoutes);
 app.use('/api/admin', adminRoutes);
 
 app.get('/api/health', (req, res) => {

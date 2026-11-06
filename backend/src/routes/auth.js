@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const fetch = require('node-fetch');
+const crypto = require('crypto');
 const User = require('../models/User');
 const LocalProProfile = require('../models/LocalProProfile');
 const OtpCode = require('../models/OtpCode');
@@ -10,11 +11,28 @@ const { now } = require('../helpers/now');
 
 const router = express.Router();
 
+function normalizeEmail(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function validEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function hashesMatch(actual, expected) {
+  const actualBuffer = Buffer.from(actual || '', 'hex');
+  const expectedBuffer = Buffer.from(expected || '', 'hex');
+  return actualBuffer.length === expectedBuffer.length
+    && crypto.timingSafeEqual(actualBuffer, expectedBuffer);
+}
+
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
-    if (!name || !email || !password) {
+    const { name, password, role } = req.body;
+    const email = normalizeEmail(req.body.email);
+    const displayName = String(name || '').trim();
+    if (!displayName || !validEmail(email) || typeof password !== 'string' || password.length < 8) {
       return res.status(400).json({ error: 'Invalid input.' });
     }
 
@@ -23,15 +41,15 @@ router.post('/register', async (req, res) => {
       userRole = 'CUSTOMER';
     }
 
-    const existing = await User.findOne({ email: email.toLowerCase() });
+    const existing = await User.findOne({ email });
     if (existing) {
       return res.status(409).json({ error: 'Email already registered.' });
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
     const user = await User.create({
-      name,
-      email: email.toLowerCase(),
+      name: displayName,
+      email,
       passwordHash,
       role: userRole,
       createdAt: now()
@@ -40,7 +58,7 @@ router.post('/register', async (req, res) => {
     if (userRole === 'LOCAL_PRO') {
       await LocalProProfile.create({
         userId: user._id,
-        displayName: name,
+        displayName,
         createdAt: now()
       });
     }
@@ -56,12 +74,13 @@ router.post('/register', async (req, res) => {
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
+    const email = normalizeEmail(req.body.email);
+    const { password } = req.body;
+    if (!validEmail(email) || typeof password !== 'string') {
       return res.status(400).json({ error: 'Invalid input.' });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ email });
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
       return res.status(401).json({ error: 'Invalid credentials.' });
     }
@@ -122,7 +141,7 @@ router.get('/oauth/google/start', (req, res) => {
     return res.status(500).json({ error: 'Google OAuth not configured.' });
   }
 
-  const state = require('crypto').randomBytes(16).toString('hex');
+  const state = crypto.randomBytes(16).toString('hex');
   req.session.oauthState = state;
   const role = req.query.role || 'CUSTOMER';
   req.session.oauthRole = ['CUSTOMER', 'LOCAL_PRO'].includes(role) ? role : 'CUSTOMER';
@@ -205,7 +224,7 @@ router.get('/oauth/apple/start', (req, res) => {
     return res.status(500).json({ error: 'Apple OAuth not configured.' });
   }
 
-  const state = require('crypto').randomBytes(16).toString('hex');
+  const state = crypto.randomBytes(16).toString('hex');
   req.session.oauthState = state;
   const role = req.query.role || 'CUSTOMER';
   req.session.oauthRole = ['CUSTOMER', 'LOCAL_PRO'].includes(role) ? role : 'CUSTOMER';
@@ -291,8 +310,8 @@ router.all('/oauth/apple/callback', async (req, res) => {
 // POST /api/auth/otp/request
 router.post('/otp/request', async (req, res) => {
   try {
-    const email = String(req.body.email || '').trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    const email = normalizeEmail(req.body.email);
+    if (!validEmail(email)) {
       return res.status(400).json({ error: 'Enter a valid email address.' });
     }
 
@@ -303,24 +322,27 @@ router.post('/otp/request', async (req, res) => {
       return res.status(429).json({ error: 'Please wait one minute before requesting another code.' });
     }
 
-    const windowStart = new Date(nowDate.getTime() - 15 * 60 * 1000).toISOString();
+    const windowStart = new Date(nowDate.getTime() - 15 * 60 * 1000);
     const requests = await OtpCode.countDocuments({ email, createdAt: { $gte: windowStart } });
     if (requests >= 5) {
       return res.status(429).json({ error: 'Too many code requests. Try again in 15 minutes.' });
     }
 
-    const expiresInMinutes = Number(process.env.OTP_EXPIRY_MINUTES || 10);
+    const configuredExpiry = Number(process.env.OTP_EXPIRY_MINUTES || 10);
+    const expiresInMinutes = Number.isFinite(configuredExpiry)
+      ? Math.min(30, Math.max(1, configuredExpiry))
+      : 10;
     const expiresAt = new Date(nowDate.getTime() + expiresInMinutes * 60 * 1000);
-    const code = String(require('crypto').randomInt(100000, 1000000));
+    const code = String(crypto.randomInt(100000, 1000000));
     const otpSecret = process.env.OTP_SECRET || process.env.SESSION_SECRET || 'dev-only-otp-secret';
-    const codeHash = require('crypto').createHmac('sha256', otpSecret).update(`${email}:${code}`).digest('hex');
+    const codeHash = crypto.createHmac('sha256', otpSecret).update(`${email}:${code}`).digest('hex');
 
     const otp = await OtpCode.create({
       email,
       codeHash,
       expiresAt,
       verified: false,
-      createdAt: now()
+      createdAt: nowDate
     });
 
     try {
@@ -347,9 +369,9 @@ router.post('/otp/request', async (req, res) => {
 // POST /api/auth/otp/verify
 router.post('/otp/verify', async (req, res) => {
   try {
-    const email = String(req.body.email || '').trim().toLowerCase();
+    const email = normalizeEmail(req.body.email);
     const code = String(req.body.code || '').trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !/^\d{6}$/.test(code)) {
+    if (!validEmail(email) || !/^\d{6}$/.test(code)) {
       return res.status(400).json({ error: 'Invalid input.' });
     }
 
@@ -371,22 +393,28 @@ router.post('/otp/verify', async (req, res) => {
     }
 
     const otpSecret = process.env.OTP_SECRET || process.env.SESSION_SECRET || 'dev-only-otp-secret';
-    const expectedHash = require('crypto').createHmac('sha256', otpSecret).update(`${email}:${code}`).digest('hex');
-    if (!otp.codeHash || !require('crypto').timingSafeEqual(Buffer.from(otp.codeHash), Buffer.from(expectedHash))) {
+    const expectedHash = crypto.createHmac('sha256', otpSecret).update(`${email}:${code}`).digest('hex');
+    if (!hashesMatch(otp.codeHash, expectedHash)) {
       otp.attempts += 1;
       await otp.save();
       return res.status(400).json({ error: 'Invalid OTP.' });
     }
 
-    otp.verified = true;
-    await otp.save();
+    const consumed = await OtpCode.findOneAndUpdate(
+      { _id: otp._id, verified: false },
+      { $set: { verified: true } },
+      { new: true }
+    );
+    if (!consumed) {
+      return res.status(400).json({ error: 'Invalid OTP.' });
+    }
 
     let user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
       user = await User.create({
         name: 'OTP User',
         email: email.toLowerCase(),
-        passwordHash: await bcrypt.hash(require('crypto').randomBytes(16).toString('hex'), 12),
+        passwordHash: await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 12),
         role: 'CUSTOMER',
         createdAt: now()
       });
@@ -412,7 +440,7 @@ async function getOrCreateUser(email, name, role) {
   user = await User.create({
     name: name || 'OAuth User',
     email: email.toLowerCase(),
-    passwordHash: await bcrypt.hash(require('crypto').randomBytes(12).toString('hex'), 12),
+    passwordHash: await bcrypt.hash(crypto.randomBytes(12).toString('hex'), 12),
     role,
     createdAt: now()
   });

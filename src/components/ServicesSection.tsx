@@ -11,7 +11,11 @@ export default function ServicesSection() {
     { icon: "🚗", name: "Auto", description: "Detailing & maintenance", count: "240+" },
     { icon: "💻", name: "Tech", description: "Web design & development", count: "180+" },
     { icon: "💇", name: "Beauty", description: "Hair, makeup & wellness", count: "350+" },
-    { icon: "🍳", name: "Food & Catering", description: "Cooking & event catering", count: "160+" }
+    { icon: "🍳", name: "Food & Catering", description: "Cooking & event catering", count: "160+" },
+    { icon: "🐾", name: "Pet Care", description: "Grooming, walking & pet sitting", count: "140+" },
+    { icon: "📦", name: "Moving & Delivery", description: "Local movers & doorstep delivery", count: "120+" },
+    { icon: "🌿", name: "Gardening", description: "Landscaping, planting & lawn care", count: "110+" },
+    { icon: "🩺", name: "Health Care", description: "Home visits & personal care", count: "95+" }
   ];
 
   return (

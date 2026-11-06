@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Login</title></head>
+<body>
+  <div id="step1">
+    <h2>Login</h2>
+    <input id="email" type="email" placeholder="Enter your email">
+    <button onclick="sendOtp()">Send OTP</button>
+  </div>
+
+  <div id="step2" style="display:none">
+    <h2>Enter OTP</h2>
+    <input id="otp" type="text" maxlength="6" placeholder="6-digit code">
+    <button onclick="verifyOtp()">Verify</button>
+  </div>
+
+  <p id="msg"></p>
+
+  <script>
+    const msg = document.getElementById("msg");
+
+    async function sendOtp() {
+      const email = document.getElementById("email").value;
+      const res = await fetch("/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      msg.textContent = data.message || data.error;
+      if (res.ok) {
+        document.getElementById("step1").style.display = "none";
+        document.getElementById("step2").style.display = "block";
+      }
+    }
+
+    async function verifyOtp() {
+      const email = document.getElementById("email").value;
+      const otp = document.getElementById("otp").value;
+      const res = await fetch("/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp }),
+      });
+      const data = await res.json();
+      msg.textContent = data.message || data.error;
+      if (res.ok) window.location.href = "/dashboard";
+    }
+  </script>
+</body>
+</html>

@@ -1,30 +1,130 @@
 
-> local-services@0.1.0 dev
+> local-services@0.1.0 dev:frontend
 > next dev
 
    ▲ Next.js 15.5.12
    - Local:        http://localhost:3000
-   - Network:      http://172.21.233.1:3000
+   - Network:      http://172.21.227.61:3000
    - Environments: .env
 
  ✓ Starting...
- ✓ Ready in 2.9s
- ✓ Compiled /middleware in 90ms (114 modules)
+ ✓ Ready in 1295ms
+ ✓ Compiled /middleware in 81ms (114 modules)
+Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
  ○ Compiling / ...
- ✓ Compiled / in 575ms (673 modules)
- GET / 200 in 909ms
- GET / 200 in 121ms
- ✓ Compiled /interfaces in 189ms (681 modules)
- GET /interfaces 200 in 253ms
- ✓ Compiled /bookings in 114ms (695 modules)
- GET /bookings 200 in 237ms
- ✓ Compiled /support in 167ms (700 modules)
- GET /support 200 in 221ms
- GET /support 200 in 23ms
- ✓ Compiled /services in 201ms (705 modules)
- GET /services 200 in 318ms
- ✓ Compiled /listings/[id] in 380ms (723 modules)
- GET /listings/6a78ea7466b1771454ba6f00 200 in 934ms
- GET /listings/6a78ea7466b1771454ba6f00 200 in 58ms
- GET /services 200 in 149ms
+ ✓ Compiled / in 864ms (696 modules)
+ GET / 200 in 993ms
+ GET / 200 in 120ms
+ GET / 200 in 50ms
+ ✓ Compiled /admin in 402ms (703 modules)
+ GET /admin 200 in 443ms
+ ✓ Compiled /register in 233ms (705 modules)
+ GET /register 200 in 301ms
+ ✓ Compiled /login in 120ms (712 modules)
+ GET /login 200 in 144ms
+ ✓ Compiled /listings in 167ms (719 modules)
+ GET /listings 200 in 219ms
+ GET /listings 200 in 24ms
+ ✓ Compiled /listings/[id] in 281ms (737 modules)
+ GET /listings/6a606e65ec453f32bfc07a20 200 in 646ms
+ GET /admin 200 in 56ms
+ ✓ Compiled /bookings/[id] in 197ms (706 modules)
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 200 in 529ms
+ ✓ Compiled / in 72ms (447 modules)
+ GET / 200 in 267ms
+ ✓ Compiled in 258ms (294 modules)
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 200 in 25ms
+ ✓ Compiled in 267ms (671 modules)
+ ✓ Compiled /_not-found in 173ms (661 modules)
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 404 in 237ms
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 200 in 65ms
+ ✓ Compiled in 163ms (676 modules)
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 200 in 23ms
+ ✓ Compiled in 115ms (676 modules)
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 200 in 24ms
+ ✓ Compiled in 164ms (676 modules)
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 200 in 22ms
+ ✓ Compiled in 261ms (678 modules)
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 200 in 27ms
+ ✓ Compiled in 128ms (678 modules)
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 200 in 20ms
+ ✓ Compiled in 156ms (678 modules)
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 200 in 25ms
+ ✓ Compiled in 157ms (678 modules)
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 200 in 24ms
+ ✓ Compiled in 149ms (299 modules)
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 200 in 27ms
+ ⨯ Failed to generate static paths for /bookings/[id]:
+[Error [PageNotFoundError]: Cannot find module for page: /bookings/[id]/page] {
+  type: 'PageNotFoundError',
+  code: 'ENOENT'
+}
+ ✓ Compiled in 72ms (299 modules)
+ ✓ Compiled /_error in 196ms (1008 modules)
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 404 in 478ms
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 200 in 308ms
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 200 in 12ms
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 200 in 57ms
+ ✓ Compiled in 167ms (450 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 404 in 213ms
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 404 in 210ms
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 404 in 212ms
+ ✓ Compiled in 112ms (450 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 404 in 216ms
+ ✓ Compiled /login in 146ms (581 modules)
+ GET /login 200 in 242ms
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 200 in 54ms
+ GET /bookings/6ae5b8aec18841ea42f4f29f 200 in 36ms
+ ✓ Compiled / in 247ms (629 modules)
+ GET / 200 in 407ms
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 200 in 46ms
+ ✓ Compiled /listings/[id] in 183ms (646 modules)
+ GET /listings/6a606e65ec453f32bfc07a20 200 in 353ms
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 200 in 41ms
+ ✓ Compiled /bookings in 148ms (1082 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /bookings 200 in 202ms
+ GET /bookings/6ae5b75359d2f9e0c72e4c1d 200 in 45ms
+ GET /bookings 200 in 45ms
+ ✓ Compiled /services in 185ms (1034 modules)
+ GET /services 200 in 288ms
+ ✓ Compiled /listings/[id] in 85ms (616 modules)
+ GET /listings/6a78ed84f4f7ab1028dae25f 200 in 178ms
+ GET /bookings/6ae5bb31c18841ea42f4f2e3 200 in 108ms
+ ✓ Compiled / in 142ms (650 modules)
+ GET / 200 in 319ms
+ ✓ Compiled /register in 166ms (655 modules)
+ GET /register 200 in 221ms
+ GET /bookings/6ae5bb31c18841ea42f4f2e3 200 in 22ms
+ GET /register 200 in 17ms
+ GET /register 200 in 9ms
+ GET /login 200 in 32ms
+ ✓ Compiled /admin in 155ms (656 modules)
+ GET /admin 200 in 208ms
+ GET /bookings/6ae5bb31c18841ea42f4f2e3 200 in 30ms
+ GET /admin 200 in 15ms
+ GET /admin 200 in 15ms
+ GET /admin 200 in 25ms
+ GET /admin 200 in 19ms
+ GET /admin 200 in 12ms
+ GET /admin 200 in 18ms
+ ✓ Compiled /contact in 338ms (1079 modules)
+ GET /contact 200 in 408ms
+ ✓ Compiled /bookings in 87ms (609 modules)
+ GET /bookings 200 in 197ms
+ ✓ Compiled /interfaces in 262ms (1052 modules)
+ GET /interfaces 200 in 286ms
+ ✓ Compiled / in 99ms (651 modules)
+ GET / 200 in 319ms
+ GET / 200 in 63ms
+ GET /contact 200 in 49ms
+ ✓ Compiled /listings in 228ms (613 modules)
+ GET /listings 200 in 433ms
+ GET /admin 200 in 34ms
+ GET /contact 200 in 23ms
 [?25h

@@ -13,7 +13,7 @@ const config = [
 ];
 
 config.push({
-  files: ["backend/**/*.js"],
+  files: ["backend/**/*.js", "otp-auth/**/*.js"],
   rules: {
     // The Express API is CommonJS; converting it piecemeal to ESM would change its runtime contract.
     "@typescript-eslint/no-require-imports": "off"

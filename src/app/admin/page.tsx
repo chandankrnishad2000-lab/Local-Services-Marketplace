@@ -12,6 +12,7 @@ type Stats = {
   activeListings: number;
   openReports: number;
   totalBookings: number;
+  newContactMessages: number;
 };
 
 type AdminListing = {
@@ -47,7 +48,19 @@ type AdminUser = {
   listingCount: number;
 };
 
-type StatusFilter = "PENDING" | "ACTIVE" | "INACTIVE" | "REJECTED" | "ALL";
+type ContactMessage = {
+  id: string;
+  userId: string | null;
+  name: string;
+  email: string;
+  phone: string | null;
+  subject: string;
+  message: string;
+  status: string;
+  created_at: string;
+};
+
+type StatusFilter = "PENDING" | "ACTIVE" | "INACTIVE" | "ALL";
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: "Pending review",
@@ -68,8 +81,11 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [pendingListings, setPendingListings] = useState<AdminListing[]>([]);
   const [activeListings, setActiveListings] = useState<AdminListing[]>([]);
+  const [inactiveListings, setInactiveListings] = useState<AdminListing[]>([]);
+  const [allListings, setAllListings] = useState<AdminListing[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<StatusFilter>("PENDING");
@@ -77,18 +93,34 @@ export default function AdminDashboardPage() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
-    const [statsRes, pendingRes, activeRes, reportsRes, usersRes] = await Promise.all([
-      apiFetch("/api/admin/stats"),
-      apiFetch("/api/listings/admin?status=PENDING"),
-      apiFetch("/api/listings/admin?status=ACTIVE"),
-      apiFetch("/api/reports"),
-      apiFetch("/api/admin/users")
+    // Keep the dashboard usable even if one endpoint fails (e.g. backend restarting).
+    const responses = await Promise.all([
+      apiFetch("/api/admin/stats").catch(() => null),
+      apiFetch("/api/listings/admin?status=PENDING").catch(() => null),
+      apiFetch("/api/listings/admin?status=ACTIVE").catch(() => null),
+      apiFetch("/api/listings/admin?status=INACTIVE").catch(() => null),
+      apiFetch("/api/listings/admin?status=ALL").catch(() => null),
+      apiFetch("/api/reports").catch(() => null),
+      apiFetch("/api/admin/users").catch(() => null),
+      apiFetch("/api/contact").catch(() => null)
     ]);
-    setStats(statsRes.ok ? (await statsRes.json()).stats : null);
-    setPendingListings(pendingRes.ok ? (await pendingRes.json()).listings ?? [] : []);
-    setActiveListings(activeRes.ok ? (await activeRes.json()).listings ?? [] : []);
-    setReports(reportsRes.ok ? (await reportsRes.json()).reports ?? [] : []);
-    setUsers(usersRes.ok ? (await usersRes.json()).users ?? [] : []);
+
+    const readJson = async (res: Response | null) => {
+      if (!res || !res.ok) return null;
+      return res.json().catch(() => null);
+    };
+
+    const [statsData, pendingData, activeData, inactiveData, allData, reportsData, usersData, messagesData] =
+      await Promise.all(responses.map(readJson));
+
+    setStats(statsData?.stats ?? null);
+    setPendingListings(pendingData?.listings ?? []);
+    setActiveListings(activeData?.listings ?? []);
+    setInactiveListings(inactiveData?.listings ?? []);
+    setAllListings(allData?.listings ?? []);
+    setReports(reportsData?.reports ?? []);
+    setUsers(usersData?.users ?? []);
+    setMessages(messagesData?.messages ?? []);
   }, []);
 
   useEffect(() => {
@@ -154,7 +186,43 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const allListings: AdminListing[] = tab === "PENDING" ? pendingListings : activeListings;
+  const setMessageStatus = async (id: string, status: string) => {
+    setBusy(`message:${id}`);
+    setNotice(null);
+    const res = await apiFetch(`/api/contact/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status })
+    });
+    setBusy(null);
+    if (res.ok) {
+      setNotice(`Message marked ${status.toLowerCase()}.`);
+      await loadAll();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setNotice(`Action failed: ${data.error ?? "Server error."}`);
+    }
+  };
+
+  const deleteMessage = async (id: string) => {
+    if (!window.confirm("Delete this message permanently?")) return;
+    setBusy(`message:${id}`);
+    setNotice(null);
+    const res = await apiFetch(`/api/contact/${id}`, { method: "DELETE" });
+    setBusy(null);
+    if (res.ok) {
+      setNotice("Message deleted.");
+      await loadAll();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setNotice(`Action failed: ${data.error ?? "Server error."}`);
+    }
+  };
+
+  const visibleListings: AdminListing[] =
+    tab === "PENDING" ? pendingListings :
+    tab === "ACTIVE" ? activeListings :
+    tab === "INACTIVE" ? inactiveListings :
+    allListings;
 
   if (authLoading || (user && user.role === "ADMIN" && loading)) {
     return (
@@ -221,6 +289,7 @@ export default function AdminDashboardPage() {
           { label: "Pending listings", value: stats?.pendingListings ?? 0, accent: "#F59E0B" },
           { label: "Active listings", value: stats?.activeListings ?? 0, accent: "#10B981" },
           { label: "Open reports", value: stats?.openReports ?? 0, accent: "#EF4444" },
+          { label: "New messages", value: stats?.newContactMessages ?? 0, accent: "#0EA5E9" },
           { label: "Total bookings", value: stats?.totalBookings ?? 0, accent: "#3B82F6" },
           { label: "Local Pros", value: stats?.totalPros ?? 0, accent: "#8B5CF6" },
           { label: "Total users", value: stats?.totalUsers ?? 0, accent: "#6B7280" }
@@ -245,7 +314,7 @@ export default function AdminDashboardPage() {
         flexWrap: "wrap",
         marginBottom: 20
       }}>
-        {(["PENDING", "ACTIVE", "ALL"] as StatusFilter[]).map((t) => (
+        {(["PENDING", "ACTIVE", "INACTIVE", "ALL"] as StatusFilter[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -269,10 +338,13 @@ export default function AdminDashboardPage() {
       <div className="card" style={{ padding: 24 }}>
         <h3 style={{ marginBottom: 4 }}>{STATUS_LABELS[tab]} listings</h3>
         <p className="muted" style={{ marginBottom: 16 }}>
-          {tab === "PENDING" ? "New listings from Local Pros await approval before going live." : tab === "ACTIVE" ? "Live listings on the public marketplace." : "Every listing across all statuses."}
+          {tab === "PENDING" ? "New listings from Local Pros await approval before going live."
+            : tab === "ACTIVE" ? "Live listings on the public marketplace."
+            : tab === "INACTIVE" ? "Paused listings. Reactivate them to make them public again."
+            : "Every listing across all statuses."}
         </p>
         <div style={{ display: "grid", gap: 12 }}>
-          {allListings.map((listing) => (
+          {visibleListings.map((listing) => (
             <div key={listing.id} style={{
               display: "flex",
               justifyContent: "space-between",
@@ -299,8 +371,8 @@ export default function AdminDashboardPage() {
                   borderRadius: "999px",
                   fontSize: "0.75rem",
                   fontWeight: 700,
-                  background: listing.status === "ACTIVE" ? "#D1FAE5" : listing.status === "PENDING" ? "#FEF3C7" : "#FEE2E2",
-                  color: listing.status === "ACTIVE" ? "#065F46" : listing.status === "PENDING" ? "#92400E" : "#991B1B"
+                  background: listing.status === "ACTIVE" ? "#D1FAE5" : listing.status === "PENDING" ? "#FEF3C7" : listing.status === "INACTIVE" ? "#E5E7EB" : "#FEE2E2",
+                  color: listing.status === "ACTIVE" ? "#065F46" : listing.status === "PENDING" ? "#92400E" : listing.status === "INACTIVE" ? "#374151" : "#991B1B"
                 }}>
                   {listing.status}
                 </span>
@@ -325,12 +397,17 @@ export default function AdminDashboardPage() {
                     style={{ padding: "7px 14px", fontSize: "0.8rem" }}>
                     Reactivate
                   </button>
+                ) : listing.status === "REJECTED" ? (
+                  <button className="button primary" disabled={busy !== null} onClick={() => setListingStatus(listing.id, "ACTIVE")}
+                    style={{ padding: "7px 14px", fontSize: "0.8rem" }}>
+                    Approve
+                  </button>
                 ) : null}
               </div>
             </div>
           ))}
-          {allListings.length === 0 ? (
-            <p className="muted">{tab === "PENDING" ? "No listings awaiting review." : "No listings."}</p>
+          {visibleListings.length === 0 ? (
+            <p className="muted">{tab === "PENDING" ? "No listings awaiting review." : tab === "INACTIVE" ? "No paused listings." : "No listings."}</p>
           ) : null}
         </div>
       </div>
@@ -377,6 +454,71 @@ export default function AdminDashboardPage() {
             </div>
           ))}
           {reports.length === 0 ? <p className="muted">No reports.</p> : null}
+        </div>
+      </div>
+
+      {/* Contact messages */}
+      <div className="card" style={{ padding: 24, marginTop: 24 }}>
+        <h3 style={{ marginBottom: 4 }}>Contact messages ({messages.length})</h3>
+        <p className="muted" style={{ marginBottom: 16 }}>
+          Messages submitted through the public contact form. New messages are highlighted.
+        </p>
+        <div style={{ display: "grid", gap: 12 }}>
+          {messages.map((message) => (
+            <div key={message.id} style={{
+              padding: "16px",
+              borderRadius: "var(--radius-sm)",
+              border: message.status === "NEW" ? "1px solid #7DD3FC" : "1px solid var(--color-border)",
+              background: message.status === "NEW" ? "#F0F9FF" : "#f9fbfd"
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ fontWeight: 700, color: "var(--color-heading)" }}>{message.subject}</div>
+                  <div className="muted" style={{ fontSize: "0.85rem" }}>
+                    {message.name} · <a href={`mailto:${message.email}`} style={{ color: "inherit" }}>{message.email}</a>
+                    {message.phone ? <> · <a href={`tel:${message.phone}`} style={{ color: "inherit" }}>{message.phone}</a></> : null}
+                  </div>
+                  <div className="muted" style={{ fontSize: "0.78rem" }}>
+                    {new Date(message.created_at).toLocaleString()}
+                    {message.userId ? " · from a registered user" : " · guest"}
+                  </div>
+                </div>
+                <span style={{
+                  padding: "4px 10px",
+                  borderRadius: "999px",
+                  fontSize: "0.75rem",
+                  fontWeight: 700,
+                  height: "fit-content",
+                  background: message.status === "NEW" ? "#E0F2FE" : message.status === "READ" ? "#FEF3C7" : "#D1FAE5",
+                  color: message.status === "NEW" ? "#0369A1" : message.status === "READ" ? "#92400E" : "#065F46"
+                }}>
+                  {message.status}
+                </span>
+              </div>
+              <p className="muted" style={{ fontSize: "0.9rem", margin: "10px 0", whiteSpace: "pre-wrap" }}>
+                {message.message}
+              </p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {message.status === "NEW" ? (
+                  <button className="button ghost" disabled={busy !== null} onClick={() => setMessageStatus(message.id, "READ")}
+                    style={{ padding: "7px 14px", fontSize: "0.8rem" }}>
+                    Mark read
+                  </button>
+                ) : null}
+                {message.status !== "RESOLVED" ? (
+                  <button className="button primary" disabled={busy !== null} onClick={() => setMessageStatus(message.id, "RESOLVED")}
+                    style={{ padding: "7px 14px", fontSize: "0.8rem" }}>
+                    Resolve
+                  </button>
+                ) : null}
+                <button className="button ghost" disabled={busy !== null} onClick={() => deleteMessage(message.id)}
+                  style={{ padding: "7px 14px", fontSize: "0.8rem", color: "#B91C1C" }}>
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+          {messages.length === 0 ? <p className="muted">No contact messages yet.</p> : null}
         </div>
       </div>
 

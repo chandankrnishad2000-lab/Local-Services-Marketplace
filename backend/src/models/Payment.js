@@ -7,6 +7,7 @@ const paymentSchema = new mongoose.Schema({
   currency: { type: String, default: 'inr', required: true },
   platformFeeCents: { type: Number, default: 0, required: true },
   tipCents: { type: Number, default: 0, required: true },
+  method: { type: String, enum: ['card', 'upi', 'netbanking'], default: 'card' },
   stripeCheckoutSessionId: { type: String },
   stripePaymentIntentId: { type: String },
   createdAt: { type: String, required: true }
